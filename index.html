@@ -559,7 +559,6 @@ input[type=radio], input[type=checkbox] { accent-color: var(--violet); margin: 0
 .cmp-verdict { font-size: 13px; max-width: 100ch; }
 .cmp-detail { font-size: 12px; color: var(--ink-2); max-width: 100ch; }
 .cmp-table { max-width: 560px; margin: 6px 0; }
-.cmp-scan tr.hit td { background: var(--violet-2); }
 .cmp-scan tr.click:focus-visible { outline: 2px solid var(--violet); outline-offset: -2px; }
 .cmp-back { margin-bottom: 6px; }
 .cmp-out .chart-svg { max-width: 760px; }
@@ -602,6 +601,93 @@ input[type=radio], input[type=checkbox] { accent-color: var(--violet); margin: 0
 .pos-grid th { font-weight: 600; color: var(--ink-2); text-align: center; }
 .pos-grid th[scope="row"] { text-align: left; }
 .pos-grid td { font-variant-numeric: tabular-nums; text-align: right; }
+
+/* ---------- Statistics sections (sub-tabs) ---------- */
+.subtabs { position: sticky; top: -18px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin: 4px -22px 16px; padding: 8px 22px 0; background: var(--paper); border-bottom: 1px solid var(--line); }
+.subtab { border: 0; background: none; padding: 7px 12px 9px; font: 500 13px var(--font); color: var(--ink-2); cursor: pointer; border-bottom: 2.5px solid transparent; margin-bottom: -1px; border-radius: 6px 6px 0 0; }
+.subtab:hover { color: var(--ink); background: var(--violet-2); }
+.subtab.active { color: var(--violet-ink); border-bottom-color: var(--violet); font-weight: 600; }
+.subtab:focus-visible { outline: 2px solid var(--violet); outline-offset: -2px; }
+.subtab-note { margin-left: 10px; }
+.pat-genes { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 12px; margin: 10px 0 8px; }
+.pat-genes select { max-width: 360px; color: var(--ink); }
+
+/* ---------- size of a difference (effect size) ---------- */
+:root { --eff-large: #1E9E5A; --eff-medium: #D9A400; --eff-small: #D64545; --eff-negl: #A9A6B8;
+  --eff-large-bg: rgba(30, 158, 90, 0.15); --eff-medium-bg: rgba(217, 164, 0, 0.18); --eff-small-bg: rgba(214, 69, 69, 0.13); --eff-negl-bg: rgba(138, 135, 160, 0.12); }
+:root[data-theme="dark"] { --eff-large: #4CC38A; --eff-medium: #E3B341; --eff-small: #FF7A7A; --eff-negl: #6E6A85;
+  --eff-large-bg: rgba(76, 195, 138, 0.17); --eff-medium-bg: rgba(227, 179, 65, 0.17); --eff-small-bg: rgba(255, 122, 122, 0.15); --eff-negl-bg: rgba(140, 136, 163, 0.13); }
+.eff-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ink); white-space: nowrap; font-weight: 500; }
+.eff-chip i { width: 9px; height: 9px; border-radius: 50%; background: var(--eff-negl); flex: none; }
+.eff-chip.eff-large i { background: var(--eff-large); }
+.eff-chip.eff-medium i { background: var(--eff-medium); }
+.eff-chip.eff-small i { background: var(--eff-small); }
+.eff-range { color: var(--ink-3); font-weight: 400; }
+.eff-legend { display: inline-flex; flex-wrap: wrap; gap: 4px 14px; }
+.eff-key { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 6px 0 8px; font-size: 12px; }
+.eff-key-label { color: var(--ink-2); font-weight: 600; }
+.sub-h .eff-chip { font-size: 12px; margin-left: 6px; font-family: var(--font); }
+.cmp-scan tr.hit.eff-large td, .cmp-scan.shade-all tr.eff-large td { background: var(--eff-large-bg); }
+.cmp-scan tr.hit.eff-medium td, .cmp-scan.shade-all tr.eff-medium td { background: var(--eff-medium-bg); }
+.cmp-scan tr.hit.eff-small td, .cmp-scan.shade-all tr.eff-small td { background: var(--eff-small-bg); }
+.cmp-scan tr.hit.eff-negligible td, .cmp-scan.shade-all tr.eff-negligible td { background: var(--eff-negl-bg); }
+.cmp-scan tr.click:hover td { box-shadow: inset 0 0 0 999px rgba(90, 61, 184, 0.07); }
+.cmp-scan td.tick, .cmp-scan th.tick { width: 30px; text-align: center; cursor: default; }
+.th-sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; white-space: nowrap; }
+.th-sort:hover { color: var(--violet-ink); text-decoration: underline; text-underline-offset: 2px; }
+.table-scroll.tall { max-height: 560px; }
+.tick-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 8px 0; }
+.tick-bar .link-btn[disabled] { color: var(--ink-3); text-decoration: none; cursor: default; }
+.cmp-backs { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-bottom: 6px; }
+.inline-check { display: inline-flex; align-items: center; gap: 4px; color: var(--ink-2); cursor: pointer; }
+.cmp-controls > label.inline-check { display: inline-flex; padding-bottom: 6px; }
+
+/* ---------- which measures are tested ---------- */
+.mpick { border: 1px solid var(--line-2); border-radius: 10px; padding: 8px 12px 4px; margin: 0 0 12px; background: var(--panel-2); }
+.mpick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 12.5px; }
+.mpick-label { font-weight: 600; color: var(--ink-2); }
+.mpick-kind { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: var(--ink); }
+.mpick-kind.off { color: var(--ink-3); }
+.mpick-n { font-size: 11px; color: var(--ink-3); margin-left: 3px; font-variant-numeric: tabular-nums; }
+.mpick-detail { display: grid; gap: 8px; margin-top: 8px; }
+.mpick-set { border: 1px solid var(--line-2); border-radius: 8px; padding: 4px 10px 8px; margin: 0; background: var(--panel); }
+.mpick-set legend { font-size: 12px; font-weight: 600; color: var(--ink-2); padding: 0 4px; }
+.mpick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 2px 12px; font-size: 12px; }
+.mpick-grid label { display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mpick-sum { margin: 6px 0 4px; }
+
+/* ---------- charts of the ticked measures ---------- */
+.dl-row { align-items: center; }
+.cmp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; margin: 8px 0 16px; }
+.cmp-chart { border: 1px solid var(--line-2); border-radius: 10px; padding: 8px 10px 4px; background: var(--panel); min-width: 0; }
+.cmp-chart .chart-svg { max-width: 100%; }
+.cmp-chart-title { font: 600 12.5px var(--font); text-align: left; text-decoration: none; color: var(--ink); margin-bottom: 2px; }
+.cmp-chart-title:hover { color: var(--violet-ink); text-decoration: underline; }
+.key-sw { display: inline-block; width: 11px; height: 11px; border: 1.5px solid; border-radius: 3px; vertical-align: -1px; }
+
+/* ---------- gene by gene ---------- */
+.gene-sec { margin-top: 18px; padding-top: 4px; border-top: 1px solid var(--line-2); }
+.gene-side select { max-width: 380px; color: var(--ink); }
+.gene-matrix-opts { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 16px; margin: 4px 0 8px; }
+.gene-score-table td.gname { font-style: italic; }
+.score-cell { white-space: nowrap; }
+.score-bar { display: inline-block; position: relative; width: 70px; height: 9px; margin-right: 8px; vertical-align: -1px; background: var(--line-2); border-radius: 2px; }
+.score-bar::after { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--ink-3); }
+.score-bar span { position: absolute; top: 0; bottom: 0; }
+.score-bar .pos { background: #e34948; border-radius: 0 2px 2px 0; }
+.score-bar .neg { background: #2a78d6; border-radius: 2px 0 0 2px; }
+:root[data-theme="dark"] .score-bar .pos { background: #e66767; }
+:root[data-theme="dark"] .score-bar .neg { background: #3987e5; }
+
+/* ---------- heat maps ---------- */
+.heat-scroll { overflow: auto; max-width: 100%; margin: 6px 0; }
+.cmp-out .heat-svg, .hm-out .heat-svg { max-width: none; width: auto; height: auto; }
+.heat-svg .heat-cell { cursor: pointer; }
+.heat-svg .heat-cell:hover { stroke: var(--ink); stroke-width: 1.5; }
+.hm-details { margin: 0 0 10px; }
+.hm-details summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
+.hm-groups { display: grid; gap: 8px; }
+.hm-groups .mpick-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 </style>
 </head>
 <body>
@@ -3847,6 +3933,7 @@ function quantile(sorted, q) {
 const meanOf = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : null;
 
 /* exact null distribution of U for small samples without ties: f(m,n,u) = f(m−1,n,u−n) + f(m,n−1,u) */
+const MW_EXACT_CACHE = new Map();
 function mwExactCounts(n1, n2) {
   const maxU = n1 * n2;
   const mk = () => Array.from({ length: n1 + 1 }, () => new Float64Array(maxU + 1));
@@ -3892,7 +3979,9 @@ function mannWhitney(a, b) {
     q1A: quantile(A, 0.25), q3A: quantile(A, 0.75), q1B: quantile(B, 0.25), q3B: quantile(B, 0.75),
     delta: 2 * U1 / (n1 * n2) - 1, superiority: U1 / (n1 * n2) };
   if (!ties && n1 <= 25 && n2 <= 25) {
-    const counts = mwExactCounts(n1, n2);
+    const ck = n1 + ',' + n2;   // the null distribution depends only on the group sizes: keep it for the next test
+    let counts = MW_EXACT_CACHE.get(ck);
+    if (!counts) { counts = mwExactCounts(n1, n2); if (MW_EXACT_CACHE.size > 400) MW_EXACT_CACHE.clear(); MW_EXACT_CACHE.set(ck, counts); }
     let total = 0;
     for (let u = 0; u <= n1 * n2; u++) total += counts[u];
     const umin = Math.min(U1, U2);
@@ -9833,15 +9922,72 @@ function exportPGCsv(app, fmt) {
 }
 
 /* ============================== Statistics tab ============================== */
+/* The Statistics tab is split into sections ("sub-tabs") so that each one fits on a screen.
+   Only the open section is built; app._statsSub remembers it. */
+const STATS_SUBTABS = [
+  ['overview', 'Overview', 'Genome size, GC, origin, charts, replicons'],
+  ['codons', 'Codon usage', 'Codon usage table of all genes or a group'],
+  ['patterns', 'Codon patterns', 'ANN %, GCN % … and your own patterns'],
+  ['cai', 'CAI', 'Codon adaptation index and its reference genes'],
+  ['compare', 'Compare groups', 'Two groups of genes, measure by measure'],
+  ['heatmap', 'Heat map', 'Several groups against one reference group']
+];
+function statsHasCodons(app) {
+  const g = app.genome;
+  return !!(g && g.records.some(r => r.seq) && geneCodonData(g).genes.length);
+}
+/** Open one section of the Statistics tab (and the tab itself). */
+function openStatsSection(app, sub, after) {
+  app._statsSub = sub;
+  if (app.activeTab === 'stats') renderStatsTab(app); else app.showTab('stats');
+  const host = $('#statsView'), bar = $('.subtabs', host);
+  if (host && bar && host.scrollTop > bar.offsetTop) host.scrollTop = bar.offsetTop;
+  if (after) requestAnimationFrame(after);
+}
 function renderStatsTab(app) {
   const host = $('#statsView');
   host.innerHTML = '';
   const g = app.genome;
   if (!g) { host.appendChild(el('p', { class: 'muted' }, 'Load a genome first.')); return; }
-  const s = genomeStats(g);
-  const mode = app.mode();
   host.appendChild(el('h2', { class: 'view-title' }, el('i', {}, g.name)));
   host.appendChild(el('p', { class: 'view-sub' }, [g.accession, g.assemblyName, g.meta.level, g.meta.category].filter(Boolean).join(', ') || 'Loaded from file'));
+  const codons = statsHasCodons(app);
+  const subs = STATS_SUBTABS.filter(([id]) => id === 'overview' || codons);
+  if (!subs.some(([id]) => id === app._statsSub)) app._statsSub = 'overview';
+  const body = el('div', { class: 'subtab-body', role: 'tabpanel', id: 'statsBody' });
+  const bar = el('div', { class: 'subtabs', role: 'tablist', 'aria-label': 'Statistics sections' });
+  const show = id => {
+    app._statsSub = id;
+    for (const b of bar.children) { const on = b.dataset.sub === id; b.classList.toggle('active', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1; }
+    body.innerHTML = '';
+    body.setAttribute('aria-label', (subs.find(s => s[0] === id) || [])[1] || '');
+    if (id === 'overview') renderStatsOverview(app, body);
+    else {
+      const blk = id === 'codons' ? codonUsageBlock(app) : id === 'patterns' ? patternsBlock(app) : id === 'cai' ? caiBlock(app) : id === 'compare' ? cmpBlock(app) : heatmapBlock(app);
+      if (blk) body.appendChild(blk); else body.appendChild(el('p', { class: 'muted' }, 'Nothing to show for this genome.'));
+    }
+    if (host.scrollTop > bar.offsetTop) host.scrollTop = bar.offsetTop;
+  };
+  for (const [id, label, tip] of subs) {
+    bar.appendChild(el('button', { role: 'tab', class: 'subtab', title: tip, dataset: { sub: id }, onclick: () => show(id),
+      onkeydown: e => {
+        const i = subs.findIndex(s => s[0] === id), k = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (!k) return;
+        e.preventDefault();
+        const nx = subs[(i + k + subs.length) % subs.length][0];
+        show(nx);
+        const b = [...bar.children].find(x => x.dataset.sub === nx); if (b) b.focus();
+      } }, label));
+  }
+  if (!codons) bar.appendChild(el('span', { class: 'subtab-note muted small' }, 'The codon sections need protein-coding genes with their DNA sequence.'));
+  host.append(bar, body);
+  show(app._statsSub);
+}
+/** Statistics → Overview: genome tiles, origin and terminus, charts, replicons, atypical GC regions. */
+function renderStatsOverview(app, host) {
+  const g = app.genome;
+  const s = genomeStats(g);
+  const mode = app.mode();
   const tiles = el('div', { class: 'tiles' });
   const tile = (label, value, sub) => tiles.appendChild(el('div', { class: 'tile' }, el('div', { class: 'tl' }, label), el('div', { class: 'tv' }, value), sub ? el('div', { class: 'ts' }, sub) : null));
   tile('Genome size', fmtBp(s.length), fmtInt(s.length) + ' bp');
@@ -9922,9 +10068,6 @@ function renderStatsTab(app) {
   rb.appendChild(el('div', { class: 'table-scroll' }, rt));
   host.appendChild(rb);
 
-  // codon usage
-  // codon usage (of all genes or a chosen group), codon patterns, CAI and group tests
-  for (const b of codonStatsBlocks(app)) host.appendChild(b);
   // atypical regions
   if (app.islandList && app.islandList.length) {
     const ib = el('div', { class: 'block' }, el('h3', {}, 'Regions with atypical GC'), el('p', { class: 'block-sub' }, 'Windows of 5 kb whose GC differs from the replicon mean by ≥ 2 standard deviations, merged. Many genomic islands and prophages show up this way; so do some normal regions such as rRNA operons.'));
@@ -10657,10 +10800,7 @@ function codonWeightStrip(w, mode, label, cut = 0.1, tip) {
 }
 
 /* ---------------- Statistics: CAI ---------------- */
-function openCaiStats(app) {
-  app.showTab('stats');
-  requestAnimationFrame(() => { const b = $('#caiBlock'); if (b) b.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
-}
+function openCaiStats(app) { openStatsSection(app, 'cai'); }
 /** Histogram of CAI (usable genes) with the reference genes as ticks under the axis. */
 function caiHistogramSVG(C, opt = {}) {
   const mode = opt.theme || opt.mode || 'light';
@@ -10875,7 +11015,10 @@ function boxPlotSVG(boxes, fmt, opt = {}) {
   const { ink, ink2, ink3, line } = chartInk(opt);
   const W = opt.width || 620, rowH = 50, m = { l: 210, r: 74, t: 24, b: 40 };
   const H = m.t + boxes.length * rowH + m.b;
-  const lo = Math.min(...boxes.map(b => b.lo)), hi = Math.max(...boxes.map(b => b.hi)), span = (hi - lo) || 1;
+  // the axis covers the 5–95% lines and every gene drawn as a dot
+  const dotted = b => b.points && b.points.length && b.points.length <= BOX_MAX_DOTS;
+  const ends = boxes.flatMap(b => [b.lo, b.hi].concat(dotted(b) ? [Math.min(...b.points.map(p => p.v)), Math.max(...b.points.map(p => p.v))] : []));
+  const lo = Math.min(...ends), hi = Math.max(...ends), span = (hi - lo) || 1;
   const pw = W - m.l - m.r, X = v => m.l + (v - lo) / span * pw;
   const svg = svgNode('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', role: 'img', 'aria-label': opt.title || 'Box plot' });
   const step = niceStep(span / 5);
@@ -10891,153 +11034,24 @@ function boxPlotSVG(boxes, fmt, opt = {}) {
     svgNode('line', { x1: X(b.lo), x2: X(b.hi), y1: cy, y2: cy, stroke: col, 'stroke-width': 2 }, svg);
     for (const v of [b.lo, b.hi]) svgNode('line', { x1: X(v), x2: X(v), y1: cy - 6, y2: cy + 6, stroke: col, 'stroke-width': 2 }, svg);
     svgNode('rect', { x: X(b.q1), y: cy - 12, width: Math.max(2, X(b.q3) - X(b.q1)), height: 24, rx: 4, fill: rgba(col, 0.22), stroke: col, 'stroke-width': 1.5 }, svg);
+    if (dotted(b)) drawGeneDots(svg, b.points, X, cy, col, fmt);
     svgNode('line', { x1: X(b.md), x2: X(b.md), y1: cy - 14, y2: cy + 14, stroke: ink, 'stroke-width': 2.5 }, svg);
     svgNode('text', { x: W - m.r + 8, y: cy + 4, 'font-size': 12.5, 'font-weight': 600, fill: ink }, svg, fmt(b.md));
   });
   svgNode('text', { x: W - m.r + 8, y: m.t - 8, 'font-size': 11, fill: ink3 }, svg, 'median');
   return svg;
 }
-function cmpBlock(app) {
-  const S = app._cmp || (app._cmp = { a: 'pg:any', b: 'rest', measure: 'cai', result: null, scan: null });
-  const blk = el('div', { class: 'block cmp-block', id: 'cmpBlock' });
-  const g = app.genome, data = geneCodonData(g);
-  const defs = cmpGroupDefs(app), measures = cmpMeasures(app);
-  if (!defs.some(d => d.value === S.a)) S.a = defs.length ? defs[0].value : '';
-  if (S.b !== 'rest' && !defs.some(d => d.value === S.b)) S.b = 'rest';
-  const groupSelect = (value, withRest, label) => {
-    const sel = el('select', { 'aria-label': label });
-    if (withRest) sel.appendChild(el('option', { value: 'rest' }, 'All other genes'));
-    for (const grp of [...new Set(defs.map(d => d.group))]) sel.appendChild(el('optgroup', { label: grp }, ...defs.filter(d => d.group === grp).map(d => el('option', { value: d.value }, d.label + ' (' + fmtInt(d.n) + ')'))));
-    sel.value = value;
-    return sel;
-  };
-  const selA = groupSelect(S.a, false, 'Group A'), selB = groupSelect(S.b, true, 'Group B');
-  const selM = el('select', { 'aria-label': 'Measure' });
-  for (const grp of [...new Set(measures.map(m => m.group))]) selM.appendChild(el('optgroup', { label: grp }, ...measures.filter(m => m.group === grp).map(m => el('option', { value: m.key }, m.label))));
-  selM.value = measures.some(m => m.key === S.measure) ? S.measure : 'cai';
-  const out = el('div', { class: 'cmp-out' });
-  const groups = () => {
-    const dA = defs.find(d => d.value === selA.value);
-    const ok = data.genes.filter(x => x.ok);
-    const A = dA ? ok.filter(x => dA.pred(x.f)) : [];
-    const inA = new Set(A.map(x => x.uid));
-    let B, overlap = 0;
-    if (selB.value === 'rest') B = ok.filter(x => !inA.has(x.uid));
-    else { const dB = defs.find(d => d.value === selB.value); const all = dB ? ok.filter(x => dB.pred(x.f)) : []; B = all.filter(x => !inA.has(x.uid)); overlap = all.length - B.length; }
-    const nameA = dA ? dA.label : 'Group A', nameB = selB.value === 'rest' ? 'All other genes' : (defs.find(d => d.value === selB.value) || {}).label || 'Group B';
-    return { A, B, overlap, nameA, nameB };
-  };
-  const runOne = keepScan => {
-    S.a = selA.value; S.b = selB.value; S.measure = selM.value;
-    if (!keepScan) S.scan = null;
-    const G = groups(), m = measures.find(x => x.key === selM.value);
-    const a = cmpValues(m, G.A), b = cmpValues(m, G.B);
-    out.innerHTML = '';
-    if (a.length < 3 || b.length < 3) { S.result = null; out.appendChild(el('p', { class: 'note-box' }, 'Both groups need at least 3 genes with a value for ' + m.label + ' (now ' + fmtInt(a.length) + ' and ' + fmtInt(b.length) + '). Choose other groups.')); return; }
-    S.result = { m, mw: mannWhitney(a, b), a, b, G, ref: caiState(app).label };
-    drawOne();
-  };
-  const drawOne = () => {
-    const { m, mw, a, b, G } = S.result;
-    const fmt = v => v == null ? '–' : v.toFixed(m.dec === 0 ? 0 : Math.max(2, m.dec));
-    const size = cliffSize(mw.delta);
-    const box = (vals, label, slot) => { const s = sortNum(vals); return { label, n: s.length, lo: quantile(s, 0.05), q1: quantile(s, 0.25), md: quantile(s, 0.5), q3: quantile(s, 0.75), hi: quantile(s, 0.95), slot }; };
-    const boxes = [box(a, G.nameA, 0), box(b, G.nameB, 1)];
-    out.innerHTML = '';
-    if (S.scan) out.appendChild(el('button', { class: 'link-btn cmp-back', onclick: () => drawScan() }, '← Back to the list of all measures'));
-    const verdict = el('p', { class: 'cmp-verdict' });
-    if (mw.p < 0.05) {
-      verdict.append(el('b', {}, 'The two groups differ'), ' (p = ' + fmtP(mw.p) + '). ',
-        mw.delta !== 0 ? el('span', {}, 'Group A tends to have a ', el('b', {}, mw.delta > 0 ? 'higher' : 'lower'), ' ' + m.label) : 'The values are spread differently',
-        ' (median ' + fmt(mw.medA) + ' against ' + fmt(mw.medB) + '). The difference is ', el('b', {}, size), ' (Cliff’s delta ' + fmtSigned(mw.delta, 2) + ').',
-        size === 'negligible' ? ' With many genes even a tiny difference gets a small p-value; the effect size says this one is too small to matter much.' : '');
-    } else {
-      verdict.append(el('b', {}, 'No clear difference'), ' (p = ' + fmtP(mw.p) + '): median ' + fmt(mw.medA) + ' against ' + fmt(mw.medB) + ', Cliff’s delta ' + fmtSigned(mw.delta, 2) + ' (' + size + ').',
-        Math.min(mw.n1, mw.n2) < 10 ? ' With so few genes in one group, only a large difference could have been detected.' : '');
-    }
-    const title = m.label + ': ' + G.nameA + ' vs ' + G.nameB;
-    const makeSvg = o => boxPlotSVG(boxes, fmt, Object.assign({ title, xLabel: m.label }, o));
-    const t = el('table', { class: 'simple-table cmp-table' },
-      el('tr', {}, el('th', {}, ''), el('th', { class: 'num' }, 'Group A'), el('th', { class: 'num' }, 'Group B')),
-      ...[['Genes with a value', fmtInt(mw.n1), fmtInt(mw.n2)], ['Median', fmt(mw.medA), fmt(mw.medB)], ['Middle half (25–75%)', fmt(mw.q1A) + ' – ' + fmt(mw.q3A), fmt(mw.q1B) + ' – ' + fmt(mw.q3B)], ['Mean', fmt(mw.meanA), fmt(mw.meanB)]]
-        .map(([k, x, y]) => el('tr', {}, el('td', {}, k), el('td', { class: 'num' }, x), el('td', { class: 'num' }, y))));
-    out.append(
-      el('div', { class: 'chart-head' }, el('h4', { class: 'sub-h' }, m.label), figureLinks(fmt2 => downloadChartSVG(o => makeSvg(o), safeFileName(g.name + '_' + m.key + '_comparison'), title, fmt2), 'the box plot')),
-      verdict, makeSvg({ mode: app.mode() }),
-      el('p', { class: 'muted small' }, 'Line = 5–95% of the genes, box = the middle half (25–75%), dark mark = median.'),
-      t,
-      el('p', { class: 'cmp-detail' }, 'Mann–Whitney U = ' + fmtInt(mw.U1) + ' (' + mw.method + (mw.z != null ? ', z = ' + fmtSigned(mw.z, 2) : '') + '), two-sided p = ' + fmtP(mw.p) + '. Cliff’s delta = ' + fmtSigned(mw.delta, 3) + ': a gene picked at random from group A has the higher value ' + (mw.superiority * 100).toFixed(1) + '% of the time against one from group B (ties count half; 50% = no difference).' + (G.overlap ? ' ' + plural(G.overlap, 'gene') + ' in both groups were kept in group A only.' : '')));
-  };
-  const runScan = () => {
-    S.a = selA.value; S.b = selB.value;
-    const G = groups();
-    out.innerHTML = '';
-    if (G.A.length < 3 || G.B.length < 3) { out.appendChild(el('p', { class: 'note-box' }, 'Both groups need at least 3 genes (now ' + fmtInt(G.A.length) + ' and ' + fmtInt(G.B.length) + ').')); return; }
-    const rows = [];
-    for (const m of measures) {
-      const a = cmpValues(m, G.A), b = cmpValues(m, G.B);
-      if (a.length < 3 || b.length < 3) continue;
-      const mw = mannWhitney(a, b);
-      if (mw && Number.isFinite(mw.p)) rows.push({ m, mw });
-    }
-    const q = bhAdjust(rows.map(r => r.mw.p));
-    rows.forEach((r, i) => { r.q = q[i]; });
-    rows.sort((x, y) => x.mw.p - y.mw.p || Math.abs(y.mw.delta) - Math.abs(x.mw.delta));
-    S.scan = { rows, G, ref: caiState(app).label };
-    S.result = null;
-    drawScan();
-  };
-  const drawScan = () => {
-    const { rows, G } = S.scan;
-    out.innerHTML = '';
-    const sig = rows.filter(r => r.q < 0.05).length;
-    out.appendChild(el('p', { class: 'cmp-verdict' }, 'Tested ', el('b', {}, fmtInt(rows.length)), ' measures for ', el('b', {}, G.nameA), ' (' + fmtInt(G.A.length) + ' genes) against ', el('b', {}, G.nameB), ' (' + fmtInt(G.B.length) + '): ', el('b', {}, fmtInt(sig)), ' differ (false discovery rate below 5%, shaded). Sorted by p; click a measure to see it on its own.'));
-    const t = el('table', { class: 'simple-table cmp-scan' }, el('tr', {}, el('th', {}, 'Measure'), el('th', {}, 'Kind'), el('th', { class: 'num' }, 'Median A'), el('th', { class: 'num' }, 'Median B'), el('th', { class: 'num' }, 'Cliff’s delta'), el('th', { class: 'num' }, 'p'), el('th', { class: 'num' }, 'q (FDR)')));
-    for (const r of rows.slice(0, 60)) {
-      const f = v => v == null ? '–' : v.toFixed(r.m.dec === 0 ? 0 : Math.max(2, r.m.dec));
-      t.appendChild(el('tr', { class: 'click' + (r.q < 0.05 ? ' hit' : ''), tabindex: 0, onclick: () => { selM.value = r.m.key; runOne(true); }, onkeydown: e => { if (e.key === 'Enter') { selM.value = r.m.key; runOne(true); } } },
-        el('td', {}, r.m.label), el('td', { class: 'muted' }, r.m.group), el('td', { class: 'num' }, f(r.mw.medA)), el('td', { class: 'num' }, f(r.mw.medB)),
-        el('td', { class: 'num' }, fmtSigned(r.mw.delta, 2)), el('td', { class: 'num' }, fmtP(r.mw.p)), el('td', { class: 'num' }, fmtP(r.q))));
-    }
-    out.appendChild(el('div', { class: 'table-scroll' }, t));
-    if (rows.length > 60) out.appendChild(el('p', { class: 'muted small' }, 'Showing the 60 smallest p-values of ' + fmtInt(rows.length) + '; the Excel file has them all.'));
-    out.appendChild(el('p', { class: 'cmp-detail' }, 'q = the p-value corrected for testing many measures at once (Benjamini–Hochberg false discovery rate): among measures with q below 0.05, on average at most 5% are expected to be false hits (strictly, this holds for independent or positively correlated measures, and many here are linked). A codon’s RSCU and its amino acid’s share are related, so read related lines as one finding.'));
-  };
-  const excel = () => {
-    const list = S.scan ? S.scan.rows : S.result ? [{ m: S.result.m, mw: S.result.mw, q: null }] : null;
-    const G = S.scan ? S.scan.G : S.result ? S.result.G : null;
-    if (!list) { toast('Compare a measure, or test every measure, first.'); return; }
-    const head = ['Measure', 'Kind', 'Genes A', 'Genes B', 'Median A', 'Median B', 'Mean A', 'Mean B', "Cliff's delta", 'Size', 'A above B (probability)', 'Mann-Whitney U', 'z', 'p', 'q (FDR)', 'Method'];
-    const r3 = v => v == null || !Number.isFinite(v) ? '' : +v.toFixed(4);
-    const rows = [head].concat(list.map(r => [r.m.label, r.m.group, r.mw.n1, r.mw.n2, r3(r.mw.medA), r3(r.mw.medB), r3(r.mw.meanA), r3(r.mw.meanB), r3(r.mw.delta), cliffSize(r.mw.delta), r3(r.mw.superiority), Math.round(r.mw.U1 * 10) / 10, r.mw.z == null ? '' : r3(r.mw.z), r.mw.p, r.q == null ? '' : r.q, r.mw.method]));
-    const members = [['group', 'locus_tag', 'gene', 'product']].concat(G.A.map(x => ['A', x.f.locus, x.f.gene, x.f.product]), G.B.map(x => ['B', x.f.locus, x.f.gene, x.f.product]));
-    downloadXlsx(safeFileName(g.name) + '_group_comparison.xlsx', [
-      { name: 'Comparison', rows, widths: [26, 26, 9, 9, 10, 10, 10, 10, 12, 11, 14, 15, 8, 12, 12, 40], filter: true },
-      { name: 'Genes', rows: members, widths: [7, 16, 10, 50], filter: true },
-      xlsxInfoSheet(app, [['Group A', G.nameA + ' — ' + plural(G.A.length, 'gene')], ['Group B', G.nameB + ' — ' + plural(G.B.length, 'gene')],
-        ['Genes used', 'Protein-coding genes without a note (no pseudogenes, partial genes or genes with internal stop codons)'],
-        ['Test', 'Mann-Whitney U (Wilcoxon rank-sum), two-sided; exact for groups of up to 25 genes without tied values, otherwise the normal approximation with corrections for ties and continuity (Mann & Whitney 1947, Ann Math Stat 18:50-60)'],
-        ['Effect size', "Cliff's delta, -1 to +1 (Cliff 1993, Psychol Bull 114:494-509); |delta| < 0.147 negligible, < 0.33 small, < 0.474 medium, otherwise large (Romano et al. 2006)"],
-        ['Multiple testing', S.scan ? 'Benjamini-Hochberg false discovery rate over all measures tested (Benjamini & Hochberg 1995, J R Stat Soc B 57:289-300)' : 'one measure, no correction'],
-        ['CAI reference', (S.scan ? S.scan.ref : S.result.ref) || caiState(app).label]])]);
-  };
-  blk.append(el('h3', {}, 'Compare two groups of genes'),
-    el('p', { class: 'block-sub' }, 'Do two groups of genes differ in codon usage, composition or length? For example cell wall genes against all other genes, plasmid against chromosome genes, or one of your highlight sets. The Mann–Whitney test does not assume that the values follow a bell curve; Cliff’s delta says how big the difference is.'),
-    defs.length ? el('div', { class: 'cmp-controls' },
-      el('label', {}, 'Group A', selA), el('label', {}, 'Group B', selB), el('label', {}, 'Measure', selM),
-      el('div', { class: 'cmp-buttons' },
-        el('button', { class: 'btn small primary', onclick: () => runOne() }, 'Compare'),
-        el('button', { class: 'btn small', onclick: runScan }, 'Test every measure'),
-        el('button', { class: 'btn small ghost', onclick: excel }, 'Excel (.xlsx)'))) : el('p', { class: 'muted' }, 'No groups of protein-coding genes are available.'),
-    out);
-  // a new CAI reference changes CAI values: work the shown result out again
-  app._cmpRefresh = () => { if (!blk.isConnected) return; if (S.scan && !S.result) runScan(); else if (S.result) runOne(!!S.scan); };
-  selM.addEventListener('change', () => runOne(!!S.scan));
-  for (const x of [selA, selB]) x.addEventListener('change', () => { if (S.scan) runScan(); else runOne(); });
-  if (S.scan && S.scan.G) { /* the genome or the groups may have changed: show a fresh result */ S.scan = null; }
-  if (defs.length) runOne();
-  return blk;
+/* single genes as dots over a box (groups of up to BOX_MAX_DOTS genes); each dot names its gene on hover */
+const BOX_MAX_DOTS = 400;
+function drawGeneDots(svg, points, X, cy, col, fmt, spread = 18) {
+  const g = svgNode('g', { class: 'gene-dots' }, svg);
+  points.forEach((p, i) => {
+    const jitter = (((i + 1) * 0.6180339887) % 1 - 0.5) * spread;   // spread dots up and down so equal values stay visible
+    const c = svgNode('circle', { cx: X(p.v), cy: cy + jitter, r: 2.6, fill: col, 'fill-opacity': 0.6, stroke: '#FFFFFF', 'stroke-width': 0.6, 'stroke-opacity': 0.8 }, g);
+    if (p.name) svgNode('title', {}, c, p.name + ': ' + fmt(p.v));
+  });
 }
+/* cmpBlock (Statistics → Compare groups) is in 15c_compare_ui.js */
 /** Groups of genes whose codon usage can be shown: all genes, the Genes table, cell wall genes, sets, the selected gene. */
 function cuGeneSets(app) {
   const data = geneCodonData(app.genome), ok = data.genes.filter(x => x.ok);
@@ -11066,15 +11080,14 @@ function codonUsageBlock(app) {
   return codonBlock(app, g, cu, pick);
 }
 function openPatternStats(app) {
-  app.showTab('stats');
-  requestAnimationFrame(() => { const b = $('#patBlock'); if (b) { b.scrollIntoView({ block: 'start', behavior: 'smooth' }); const i = $('input', b); if (i) i.focus({ preventScroll: true }); } });
+  openStatsSection(app, 'patterns', () => { const i = $('#patBlock input'); if (i) i.focus({ preventScroll: true }); });
 }
 /** Statistics → Codon patterns: the patterns to count, their totals and the codon types by position. */
 function patternsBlock(app) {
   const blk = el('div', { class: 'block pat-block', id: 'patBlock' });
   const render = () => {
     blk.innerHTML = '';
-    const g = app.genome, data = geneCodonData(g), { cur } = cuCurrentSet(app);
+    const g = app.genome, data = geneCodonData(g), { sets, cur } = cuCurrentSet(app);
     const P = userCodonPatterns(app);
     const input = el('input', { type: 'text', value: app.settings.codonPatterns ?? 'ANN, ATN, GCN, TTT', spellcheck: 'false', autocomplete: 'off', 'aria-label': 'Codon patterns to count, separated by commas' });
     const err = el('p', { class: 'gf-err', role: 'status' }, P.errors.join(' '));
@@ -11088,7 +11101,11 @@ function patternsBlock(app) {
       err,
       el('p', { class: 'muted small' }, 'Patterns are read left → right. N (or X, .) is any base; IUPAC letters work (R = A or G, Y = C or T, S, W, K, M, B, D, H, V). A pattern shorter than 3 letters matches the start of the codon (GC = GCN). U counts as T.'));
     const ok = cur.genes, total = ok.reduce((a, x) => a + x.codons, 0);
-    blk.append(el('p', { class: 'muted small' }, 'Counted in ' + plural(ok.length, 'gene') + ' (' + cur.label.toLowerCase() + ', ' + fmtInt(total) + ' codons). Change the genes in the Codon usage block above.'));
+    // the genes counted (shared with the Codon usage section)
+    const genesSel = el('select', { 'aria-label': 'Genes counted', class: 'cu-genes' }, ...sets.map(o => el('option', { value: o.value, selected: o.value === cur.value }, o.label + ' (' + fmtInt(o.genes.length) + ')')));
+    genesSel.addEventListener('change', () => { app._cuSel = genesSel.value; render(); const s2 = $('select.cu-genes', blk); if (s2) s2.focus(); });
+    blk.append(el('div', { class: 'pat-genes' }, el('label', { class: 'gf-field' }, 'Genes counted', genesSel),
+      el('span', { class: 'muted small' }, plural(ok.length, 'gene') + ', ' + fmtInt(total) + ' codons. The Codon usage section uses the same genes.')));
     if (P.list.length) {
       const t = el('table', { class: 'simple-table pat-table' }, el('tr', {}, el('th', {}, 'Pattern'), el('th', {}, 'Codons it covers'), el('th', { class: 'num' }, 'Codons matching'), el('th', { class: 'num' }, '% of all codons'), el('th', { class: 'num', title: 'Half of the genes have a lower share, half a higher one' }, 'Median % per gene')));
       for (const c of P.list) {
@@ -11133,14 +11150,6 @@ function patternsBlock(app) {
   app._patBlockRefresh = () => { if (blk.isConnected) render(); };
   render();
   return blk;
-}
-/** The Statistics-tab blocks for codon usage per gene. */
-function codonStatsBlocks(app) {
-  const g = app.genome;
-  if (!g || !g.records.some(r => r.seq)) return [];
-  const data = geneCodonData(g);
-  if (!data.genes.length) return [];
-  return [codonUsageBlock(app), patternsBlock(app), caiBlock(app), cmpBlock(app)].filter(Boolean);
 }
 
 /* ---------------- map track coloured by a codon measure ---------------- */
@@ -11330,6 +11339,857 @@ function optResultView(app, r, o) {
   return el('div', { class: 'opt-res' },
     el('div', { class: 'opt-head' }, el('b', {}, r.name), el('span', { class: 'muted' }, ' · ' + fmtInt(r.protein.length) + ' aa → ' + fmtInt(r.seq.length) + ' nt' + (r.stop ? ' (stop codon ' + r.stop + ')' : ''))),
     tab, map, el('pre', { class: 'seqbox opt-seq' }, lines.join('\n')), notes);
+}
+
+/* ===== 15c_compare_ui.js ===== */
+/* ==========================================================================
+   GenOrbit — Statistics → Compare groups, and Statistics → Heat map.
+
+   Compare groups: two groups of genes (A and B).
+     • one measure: verdict, box plot with the genes as dots, and a gene-by-gene table;
+     • many measures: a table with the size of each difference (Large / Medium / Small /
+       Negligible, shaded green / yellow / red / grey), tick boxes, the charts of the ticked
+       measures on one page (one figure or a zip of files), and a genes × measures heat map.
+   Heat map: several groups at once, each against one reference group, measure by measure.
+
+   Gene score (gene by gene): for a gene of group A, the share of group B genes with a lower
+   value minus the share with a higher value (−1 … +1). The average score of all group A genes
+   is exactly Cliff's delta, so the genes with the highest scores drive the difference most.
+   ========================================================================== */
+
+/* ---------------- size of a difference: Cliff's delta (thresholds of Romano et al. 2006) ---------------- */
+const EFFECT_ORDER = ['large', 'medium', 'small', 'negligible'];
+const EFFECT_LABEL = { large: 'Large', medium: 'Medium', small: 'Small', negligible: 'Negligible' };
+const EFFECT_RANGE = { large: '|δ| ≥ 0.474', medium: '0.33–0.474', small: '0.147–0.33', negligible: 'below 0.147' };
+const EFFECT_DOT = {
+  light: { large: '#1E9E5A', medium: '#D9A400', small: '#D64545', negligible: '#A9A6B8' },
+  dark: { large: '#4CC38A', medium: '#E3B341', small: '#FF7A7A', negligible: '#6E6A85' }
+};
+function effectChip(delta) {
+  const s = cliffSize(delta);
+  return el('span', { class: 'eff-chip eff-' + s, title: 'Cliff’s delta ' + fmtSigned(delta, 2) + ': ' + s + ' difference' }, el('i', { 'aria-hidden': 'true' }), EFFECT_LABEL[s]);
+}
+function effectLegend() {
+  return el('span', { class: 'eff-legend' }, ...EFFECT_ORDER.map(s => el('span', { class: 'eff-chip eff-' + s, title: 'Cliff’s delta ' + EFFECT_RANGE[s] }, el('i', { 'aria-hidden': 'true' }), EFFECT_LABEL[s], el('span', { class: 'eff-range' }, ' ' + EFFECT_RANGE[s]))));
+}
+
+/* ---------------- small helpers ---------------- */
+const cmpGeneName = x => x.f.gene || x.f.locus || x.f.name || String(x.uid);
+/** File name: a short genome name plus what the file holds (both kept readable). */
+const cmpFileBase = (g, what) => safeFileName(g.name).slice(0, 36).replace(/_+$/, '') + '_' + String(what).replace(/[^A-Za-z0-9._-]+/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '').slice(0, 90);
+const cmpFmt = m => v => v == null || !Number.isFinite(v) ? '–' : v.toFixed(m.dec === 0 ? 0 : Math.max(2, m.dec));
+/** The genes of a group that have a value for a measure: [{v, x, name}]. */
+function cmpPoints(m, genes) {
+  const out = [];
+  for (const x of genes) { const v = m.get(x); if (v != null && Number.isFinite(v)) out.push({ v, x, name: cmpGeneName(x) }); }
+  return out;
+}
+function cmpBox(points, label, slot, withDots) {
+  const s = sortNum(points.map(p => p.v));
+  return { label, n: s.length, lo: quantile(s, 0.05), q1: quantile(s, 0.25), md: quantile(s, 0.5), q3: quantile(s, 0.75), hi: quantile(s, 0.95), slot, points: withDots ? points : null };
+}
+/** Score of each gene against the genes of the other group (see the top of this file). */
+function geneScores(points, otherValues) {
+  const o = sortNum(otherValues), n = o.length;
+  return points.map(p => {
+    let a = 0, b = n;
+    while (a < b) { const mid = (a + b) >> 1; if (o[mid] < p.v) a = mid + 1; else b = mid; }
+    const lower = a;
+    b = n;
+    while (a < b) { const mid = (a + b) >> 1; if (o[mid] <= p.v) a = mid + 1; else b = mid; }
+    const higher = n - a;
+    return Object.assign({}, p, { score: n ? (lower - higher) / n : 0, below: n ? (lower + (n - lower - higher) / 2) / n : 0.5 });
+  });
+}
+/** Group A and B as gene lists. Genes in both groups stay in group A only. */
+function cmpGroupsOf(app, defs, aVal, bVal) {
+  const ok = geneCodonData(app.genome).genes.filter(x => x.ok);
+  const dA = defs.find(d => d.value === aVal);
+  const A = dA ? ok.filter(x => dA.pred(x.f)) : [];
+  const inA = new Set(A.map(x => x.uid));
+  let B, overlap = 0;
+  if (bVal === 'rest') B = ok.filter(x => !inA.has(x.uid));
+  else { const dB = defs.find(d => d.value === bVal); const all = dB ? ok.filter(x => dB.pred(x.f)) : []; B = all.filter(x => !inA.has(x.uid)); overlap = all.length - B.length; }
+  const nameA = dA ? dA.label : 'Group A', nameB = bVal === 'rest' ? 'All other genes' : (defs.find(d => d.value === bVal) || {}).label || 'Group B';
+  return { A, B, overlap, nameA, nameB, a: aVal, b: bVal };
+}
+/** Group select: options grouped like the group definitions; withRest adds "All other genes". */
+function cmpGroupSelect(defs, value, rest, label) {
+  const sel = el('select', { 'aria-label': label });
+  if (rest) sel.appendChild(el('option', { value: 'rest' }, rest));
+  for (const grp of [...new Set(defs.map(d => d.group))]) sel.appendChild(el('optgroup', { label: grp }, ...defs.filter(d => d.group === grp).map(d => el('option', { value: d.value }, d.label + ' (' + fmtInt(d.n) + ')'))));
+  sel.value = value;
+  if (sel.value !== value && sel.options.length) sel.selectedIndex = 0;
+  return sel;
+}
+
+/* ---------------- which measures are tested (shared by the comparison table and the heat map) ---------------- */
+function cmpMeasureOn(app, m) {
+  const s = app.settings;
+  return !(s.cmpOffKinds || []).includes(m.group) && !(s.cmpOffKeys || []).includes(m.key);
+}
+function cmpActiveMeasures(app, measures) { return measures.filter(m => cmpMeasureOn(app, m)); }
+/** Tick boxes for each kind of measure (Gene, Amino acids …) and, folded away, for single measures. */
+function measurePicker(app, measures, onChange) {
+  const box = el('div', { class: 'mpick' });
+  const kinds = [...new Set(measures.map(m => m.group))];
+  let open = false;
+  const save = () => {
+    const k = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.k : null;
+    app.saveSettings(); render();
+    if (k) { const e = box.querySelector('[data-k="' + CSS.escape(k) + '"]'); if (e) e.focus(); }
+    onChange();
+  };
+  const setKind = (kind, on) => {
+    const s = app.settings;
+    s.cmpOffKinds = (s.cmpOffKinds || []).filter(k => k !== kind);
+    const keys = new Set(measures.filter(m => m.group === kind).map(m => m.key));
+    if (on) s.cmpOffKeys = (s.cmpOffKeys || []).filter(k => !keys.has(k));
+    else s.cmpOffKinds.push(kind);
+    save();
+  };
+  const setKey = (m, on) => {
+    const s = app.settings;
+    s.cmpOffKeys = (s.cmpOffKeys || []).filter(k => k !== m.key);
+    if ((s.cmpOffKinds || []).includes(m.group)) {
+      if (!on) { save(); return; }
+      // the whole kind was off: switch it on with only this measure
+      s.cmpOffKinds = s.cmpOffKinds.filter(k => k !== m.group);
+      for (const x of measures) if (x.group === m.group && x.key !== m.key && !s.cmpOffKeys.includes(x.key)) s.cmpOffKeys.push(x.key);
+    } else if (!on) s.cmpOffKeys.push(m.key);
+    save();
+  };
+  const render = () => {
+    box.innerHTML = '';
+    const nOn = measures.filter(m => cmpMeasureOn(app, m)).length;
+    const row = el('div', { class: 'mpick-row' }, el('span', { class: 'mpick-label' }, 'Measures to test'));
+    for (const k of kinds) {
+      const ms = measures.filter(m => m.group === k), on = ms.filter(m => cmpMeasureOn(app, m)).length;
+      const cb = el('input', { type: 'checkbox', dataset: { k: 'kind:' + k } });
+      cb.checked = on > 0; cb.indeterminate = on > 0 && on < ms.length;
+      cb.addEventListener('change', () => setKind(k, cb.checked));
+      row.appendChild(el('label', { class: 'mpick-kind' + (on ? '' : ' off'), title: ms.map(m => m.label).join(', ') }, cb, k, el('span', { class: 'mpick-n' }, on && on < ms.length ? on + ' of ' + ms.length : String(ms.length))));
+    }
+    row.appendChild(el('button', { class: 'link-btn', 'aria-expanded': String(open), dataset: { k: 'toggle' }, onclick: () => { open = !open; render(); const t = box.querySelector('[data-k="toggle"]'); if (t) t.focus(); } }, open ? 'Hide the single measures' : 'Choose single measures…'));
+    box.appendChild(row);
+    if (open) {
+      const det = el('div', { class: 'mpick-detail' });
+      for (const k of kinds) {
+        const ms = measures.filter(m => m.group === k);
+        det.appendChild(el('fieldset', { class: 'mpick-set' },
+          el('legend', {}, k, ' ', el('button', { class: 'link-btn', onclick: () => setKind(k, true) }, 'all'), ' · ', el('button', { class: 'link-btn', onclick: () => setKind(k, false) }, 'none')),
+          el('div', { class: 'mpick-grid' }, ...ms.map(m => {
+            const c = el('input', { type: 'checkbox', dataset: { k: m.key } });
+            c.checked = cmpMeasureOn(app, m);
+            c.addEventListener('change', () => setKey(m, c.checked));
+            return el('label', {}, c, m.label);
+          }))));
+      }
+      box.appendChild(det);
+    }
+    box.appendChild(el('p', { class: 'mpick-sum muted small' }, nOn ? plural(nOn, 'measure') + ' of ' + fmtInt(measures.length) + ' are tested. The q-values are corrected for the number of measures tested.' : 'Tick at least one kind of measure.'));
+  };
+  render();
+  return box;
+}
+
+/* ---------------- one measure as a compact panel (for the page of charts and the combined figure) ---------------- */
+function cmpPanelSVG(it, G, opt = {}) {
+  const mode = opt.theme || opt.mode || 'light';
+  const { ink, ink2, ink3, line } = chartInk(opt);
+  const r = it.r, m = r.m, fmt = cmpFmt(m);
+  const W = opt.width || 380, rowH = 34, M = { l: 30, r: 62, t: opt.noTitle ? 30 : 46, b: 30 }, ty = opt.noTitle ? -18 : 0;
+  const H = M.t + 2 * rowH + M.b;
+  const boxes = [cmpBox(it.a, G.nameA, 0, opt.dots), cmpBox(it.b, G.nameB, 1, opt.dots)];
+  const dotted = b => b.points && b.points.length && b.points.length <= BOX_MAX_DOTS;
+  const ends = boxes.flatMap(b => [b.lo, b.hi].concat(dotted(b) ? [Math.min(...b.points.map(p => p.v)), Math.max(...b.points.map(p => p.v))] : []));
+  const lo = Math.min(...ends), hi = Math.max(...ends), span = (hi - lo) || 1;
+  const pw = W - M.l - M.r, X = v => M.l + (v - lo) / span * pw;
+  const svg = svgNode('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', role: 'img', 'aria-label': m.label + ': ' + G.nameA + ' against ' + G.nameB });
+  const size = cliffSize(r.mw.delta);
+  if (!opt.noTitle) svgNode('text', { x: 4, y: 16, 'font-size': 13.5, 'font-weight': 600, fill: ink }, svg, truncate(m.label, 44));
+  svgNode('circle', { cx: 9, cy: 30 + ty, r: 4.5, fill: EFFECT_DOT[mode === 'dark' ? 'dark' : 'light'][size] }, svg);
+  svgNode('text', { x: 18, y: 34 + ty, 'font-size': 11.5, fill: ink2 }, svg, EFFECT_LABEL[size] + ' difference · δ = ' + fmtSigned(r.mw.delta, 2) + ' · ' + (r.q != null ? 'q = ' + fmtP(r.q) : 'p = ' + fmtP(r.mw.p)));
+  const step = niceStep(span / 4);
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) {
+    svgNode('line', { x1: X(v), x2: X(v), y1: M.t, y2: M.t + 2 * rowH, stroke: line, 'stroke-width': 1 }, svg);
+    svgNode('text', { x: X(v), y: M.t + 2 * rowH + 14, 'text-anchor': 'middle', 'font-size': 10.5, fill: ink3 }, svg, fmt(v));
+  }
+  boxes.forEach((b, i) => {
+    const cy = M.t + i * rowH + rowH / 2, col = CAT[mode][b.slot];
+    svgNode('text', { x: M.l - 10, y: cy + 4.5, 'text-anchor': 'end', 'font-size': 12.5, 'font-weight': 700, fill: col }, svg, i ? 'B' : 'A');
+    if (b.n < 1) return;
+    svgNode('line', { x1: X(b.lo), x2: X(b.hi), y1: cy, y2: cy, stroke: col, 'stroke-width': 2 }, svg);
+    for (const v of [b.lo, b.hi]) svgNode('line', { x1: X(v), x2: X(v), y1: cy - 5, y2: cy + 5, stroke: col, 'stroke-width': 2 }, svg);
+    svgNode('rect', { x: X(b.q1), y: cy - 9, width: Math.max(2, X(b.q3) - X(b.q1)), height: 18, rx: 4, fill: rgba(col, 0.22), stroke: col, 'stroke-width': 1.5 }, svg);
+    if (dotted(b)) drawGeneDots(svg, b.points, X, cy, col, fmt, 13);
+    svgNode('line', { x1: X(b.md), x2: X(b.md), y1: cy - 11, y2: cy + 11, stroke: ink, 'stroke-width': 2.5 }, svg);
+    svgNode('text', { x: W - M.r + 8, y: cy + 4, 'font-size': 12, 'font-weight': 600, fill: ink }, svg, fmt(b.md));
+  });
+  svgNode('text', { x: W - M.r + 8, y: M.t - 4, 'font-size': 10, fill: ink3 }, svg, 'median');
+  return svg;
+}
+/** Several panels in one figure, with the two groups named once on top. */
+function cmpFigureSVG(items, G, opt = {}) {
+  const mode = opt.theme || opt.mode || 'light';
+  const { ink, ink2 } = chartInk(opt);
+  const cols = items.length <= 2 ? items.length : items.length <= 4 ? 2 : 3, pw = 380, gap = 18;
+  const panels = items.map(it => cmpPanelSVG(it, G, Object.assign({}, opt, { width: pw })));
+  const ph = Math.max(...panels.map(p => +p.getAttribute('viewBox').split(' ')[3]));
+  const legendH = 46, rows = Math.ceil(items.length / cols);
+  const W = cols * pw + (cols - 1) * gap + 8, H = legendH + rows * (ph + gap);
+  const svg = svgNode('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', role: 'img', 'aria-label': items.length + ' measures: ' + G.nameA + ' against ' + G.nameB });
+  [[G.nameA, G.A.length, 0, 'A'], [G.nameB, G.B.length, 1, 'B']].forEach(([name, n, slot, letter], i) => {
+    const y = 14 + i * 19;
+    svgNode('rect', { x: 4, y: y - 10, width: 12, height: 12, rx: 3, fill: rgba(CAT[mode][slot], 0.3), stroke: CAT[mode][slot], 'stroke-width': 1.5 }, svg);
+    const t = svgNode('text', { x: 24, y, 'font-size': 12.5, fill: ink }, svg);
+    svgNode('tspan', { 'font-weight': 700 }, t, letter + ': ');
+    svgNode('tspan', {}, t, truncate(name, 70) + ' (' + plural(n, 'gene') + ')');
+  });
+  panels.forEach((p, i) => {
+    const gx = (i % cols) * (pw + gap), gy = legendH + Math.floor(i / cols) * (ph + gap);
+    const gEl = svgNode('g', { transform: `translate(${gx} ${gy})` }, svg);
+    for (const c of [...p.childNodes]) gEl.appendChild(c);
+  });
+  svgNode('text', { x: 4, y: H - 4, 'font-size': 10.5, fill: ink2 }, svg, 'Line = 5–95% of the genes, box = middle half, dark mark = median; δ = Cliff’s delta (A against B).');
+  return svg;
+}
+
+/* ---------------- heat map grid (groups × measures, or genes × measures) ---------------- */
+let HEAT_GRAD_N = 0;
+/**
+ * o.rows = [{label, group?, italic?}], o.cols = [{label}], o.cell(ri, ci) → {v (−1…1), mark, text} or null.
+ * Colours: blue (−1) … grey (0) … red (+1). o.numbers writes the value in each cell.
+ */
+function heatGridSVG(o) {
+  const mode = o.theme || o.mode || 'light';
+  const { ink, ink2, ink3, line } = chartInk(o);
+  const stops = DIVERGING[mode === 'dark' ? 'dark' : 'light'];
+  const cw = o.cellW || (o.numbers ? 40 : 30), ch = o.cellH || 17;
+  const rowLabelW = clamp(Math.max(10, ...o.rows.map(r => Math.min(42, r.label.length))) * 6.6 + 16, 90, 300);
+  const colChars = Math.max(4, ...o.cols.map(c => Math.min(46, c.label.length)));
+  const top = Math.round(clamp(colChars * 4.9 + 26, 60, 230));
+  const layout = [];
+  let y = top, lastGroup;
+  o.rows.forEach((r, ri) => {
+    if (o.groupRows && r.group !== lastGroup) { lastGroup = r.group; layout.push({ head: r.group, y }); y += 22; }
+    layout.push({ ri, y }); y += ch;
+  });
+  const gridW = o.cols.length * cw, right = Math.round(colChars * 4.6 + 20);
+  const W = Math.max(rowLabelW + gridW + right, 520), legendY = y + 18, H = legendY + 62;
+  const svg = svgNode('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, class: 'chart-svg heat-svg', role: 'img', 'aria-label': o.title || 'Heat map' });
+  const colour = v => rampColor(stops, (clamp(v, -1, 1) + 1) / 2);
+  // column labels, turned so long names fit
+  o.cols.forEach((c, ci) => {
+    const x = rowLabelW + ci * cw + cw / 2;
+    svgNode('text', { x, y: top - 8, 'font-size': 11.5, fill: ink, transform: `rotate(-45 ${x} ${top - 8})` }, svg, truncate(c.label, 46));
+  });
+  for (const L of layout) {
+    if (L.head != null) {
+      svgNode('text', { x: 4, y: L.y + 15, 'font-size': 11.5, 'font-weight': 700, fill: ink2 }, svg, L.head);
+      svgNode('line', { x1: 4, x2: rowLabelW + gridW, y1: L.y + 19.5, y2: L.y + 19.5, stroke: line, 'stroke-width': 1 }, svg);
+      continue;
+    }
+    const r = o.rows[L.ri];
+    svgNode('text', { x: rowLabelW - 8, y: L.y + ch / 2 + 4, 'text-anchor': 'end', 'font-size': 11.5, fill: ink, 'font-style': r.italic ? 'italic' : 'normal' }, svg, truncate(r.label, 42));
+    o.cols.forEach((c, ci) => {
+      const x = rowLabelW + ci * cw, cell = o.cell(L.ri, ci);
+      if (!cell || cell.v == null || !Number.isFinite(cell.v)) {
+        svgNode('rect', { x, y: L.y, width: cw - 2, height: ch - 2, rx: 2, fill: 'none', stroke: line, 'stroke-width': 1, 'stroke-dasharray': '2 2', class: 'heat-cell', 'data-r': L.ri, 'data-c': ci }, svg);
+        return;
+      }
+      const fill = colour(cell.v);
+      svgNode('rect', { x, y: L.y, width: cw - 2, height: ch - 2, rx: 2, fill, class: 'heat-cell', 'data-r': L.ri, 'data-c': ci }, svg);
+      const on = textOn(fill);
+      if (o.numbers) {
+        svgNode('text', { x: x + (cw - 2) / 2, y: L.y + ch / 2 + 3, 'text-anchor': 'middle', 'font-size': 9.5, 'font-weight': cell.mark ? 700 : 400, fill: on, 'pointer-events': 'none' }, svg, cell.text != null ? cell.text : fmtSigned(cell.v, 2));
+        if (cell.mark) svgNode('circle', { cx: x + cw - 6, cy: L.y + 3.5, r: 1.8, fill: on, 'pointer-events': 'none' }, svg);
+      } else if (cell.mark) svgNode('circle', { cx: x + (cw - 2) / 2, cy: L.y + (ch - 2) / 2, r: 2.6, fill: on, 'pointer-events': 'none' }, svg);
+    });
+  }
+  // legend: colour bar from −1 to +1, and what the dot means
+  const gid = 'heatGrad' + (++HEAT_GRAD_N), lx = 8, lw = 220;
+  const defs = svgNode('defs', {}, svg), grad = svgNode('linearGradient', { id: gid, x1: 0, x2: 1, y1: 0, y2: 0 }, defs);
+  for (const [t, c] of stops) svgNode('stop', { offset: t, 'stop-color': c }, grad);
+  svgNode('text', { x: lx, y: legendY, 'font-size': 11.5, 'font-weight': 600, fill: ink }, svg, o.legendTitle || 'Cliff’s delta');
+  svgNode('rect', { x: lx, y: legendY + 7, width: lw, height: 11, rx: 2, fill: `url(#${gid})` }, svg);
+  [[-1, '−1'], [-0.5, '−0.5'], [0, '0'], [0.5, '+0.5'], [1, '+1']].forEach(([v, t]) => svgNode('text', { x: lx + (v + 1) / 2 * lw, y: legendY + 31, 'text-anchor': 'middle', 'font-size': 10.5, fill: ink3 }, svg, t));
+  svgNode('text', { x: lx, y: legendY + 47, 'font-size': 10.5, fill: ink2 }, svg, 'Blue = ' + (o.lowText || 'lower') + '; red = ' + (o.highText || 'higher') + '.');
+  if (o.markText) {
+    svgNode('circle', { cx: lx + lw + 30, cy: legendY + 12, r: 3, fill: ink }, svg);
+    svgNode('text', { x: lx + lw + 40, y: legendY + 16, 'font-size': 11, fill: ink2 }, svg, o.markText);
+  }
+  if (o.emptyText) {
+    svgNode('rect', { x: lx + lw + 25, y: legendY + 25, width: 11, height: 9, rx: 2, fill: 'none', stroke: ink3, 'stroke-dasharray': '2 2' }, svg);
+    svgNode('text', { x: lx + lw + 40, y: legendY + 33, 'font-size': 11, fill: ink2 }, svg, o.emptyText);
+  }
+  return svg;
+}
+/** Hover and click on heat map cells (screen only): info(ri, ci) → HTML, click(ri, ci). */
+function wireHeatGrid(svg, info, click) {
+  svg.addEventListener('pointermove', e => {
+    const c = e.target.closest && e.target.closest('.heat-cell');
+    if (!c) { Tooltip.hide(); return; }
+    const h = info(+c.dataset.r, +c.dataset.c);
+    if (h) Tooltip.show(h, e.clientX, e.clientY); else Tooltip.hide();
+  });
+  svg.addEventListener('pointerleave', () => Tooltip.hide());
+  if (click) svg.addEventListener('click', e => { const c = e.target.closest && e.target.closest('.heat-cell'); if (c) { Tooltip.hide(); click(+c.dataset.r, +c.dataset.c); } });
+}
+
+/* ---------------- Compare two groups ---------------- */
+function sortScanRows(rows, sort) {
+  const dir = sort.desc ? -1 : 1;
+  const key = { measure: r => r.m.label, kind: r => r.m.group, medA: r => r.mw.medA, medB: r => r.mw.medB, delta: r => r.mw.delta, effect: r => Math.abs(r.mw.delta), p: r => r.mw.p, q: r => r.q }[sort.by] || (r => r.mw.p);
+  return rows.slice().sort((x, y) => {
+    const a = key(x), b = key(y);
+    const c = typeof a === 'string' ? a.localeCompare(b) : (a - b);
+    return c * dir || x.mw.p - y.mw.p;
+  });
+}
+function cmpBlock(app) {
+  const S = app._cmp || (app._cmp = { a: 'pg:any', b: 'rest', measure: 'cai', view: 'one' });
+  if (!(S.ticked instanceof Set)) S.ticked = new Set();
+  if (!S.sort) S.sort = { by: 'p', desc: false };
+  if (!S.geneSide) S.geneSide = 'A';
+  if (S.dots == null) S.dots = true;
+  const blk = el('div', { class: 'block cmp-block', id: 'cmpBlock' });
+  const g = app.genome;
+  const defs = cmpGroupDefs(app), measures = cmpMeasures(app);
+  if (!defs.some(d => d.value === S.a)) S.a = defs.length ? defs[0].value : '';
+  if (S.b !== 'rest' && !defs.some(d => d.value === S.b)) S.b = 'rest';
+  const selA = cmpGroupSelect(defs, S.a, null, 'Group A'), selB = cmpGroupSelect(defs, S.b, 'All other genes', 'Group B');
+  const selM = el('select', { 'aria-label': 'Measure' });
+  for (const grp of [...new Set(measures.map(m => m.group))]) selM.appendChild(el('optgroup', { label: grp }, ...measures.filter(m => m.group === grp).map(m => el('option', { value: m.key }, m.label))));
+  selM.value = measures.some(m => m.key === S.measure) ? S.measure : 'cai';
+  const out = el('div', { class: 'cmp-out' });
+  const scanBtn = el('button', { class: 'btn small', onclick: () => runScan() });
+  const setScanLabel = () => { const n = cmpActiveMeasures(app, measures).length; scanBtn.textContent = n === measures.length ? 'Test every measure' : 'Test the ' + plural(n, 'chosen measure'); scanBtn.disabled = !n; };
+  const groups = () => cmpGroupsOf(app, defs, selA.value, selB.value);
+  const scanFits = () => S.scan && S.scan.G.a === selA.value && S.scan.G.b === selB.value;
+  const backLinks = () => {
+    if (!scanFits()) return null;
+    return el('div', { class: 'cmp-backs' },
+      el('button', { class: 'link-btn', onclick: () => drawScan() }, '← Back to the list of measures'),
+      S.backTo === 'charts' && S.ticked.size ? el('button', { class: 'link-btn', onclick: () => drawCharts() }, '← Back to the charts') : null);
+  };
+
+  /* ----- one measure ----- */
+  const runOne = () => {
+    S.a = selA.value; S.b = selB.value; S.measure = selM.value; S.view = 'one';
+    const G = groups(), m = measures.find(x => x.key === selM.value);
+    const pa = cmpPoints(m, G.A), pb = cmpPoints(m, G.B);
+    out.innerHTML = '';
+    if (pa.length < 3 || pb.length < 3) {
+      S.result = null;
+      out.append(backLinks() || '', el('p', { class: 'note-box' }, 'Both groups need at least 3 genes with a value for ' + m.label + ' (now ' + fmtInt(pa.length) + ' and ' + fmtInt(pb.length) + '). Choose other groups.'));
+      return;
+    }
+    S.result = { m, mw: mannWhitney(pa.map(p => p.v), pb.map(p => p.v)), pa, pb, G, ref: caiState(app).label };
+    drawOne();
+  };
+  const drawOne = () => {
+    S.view = 'one';
+    const { m, mw, pa, pb, G } = S.result;
+    const fmt = cmpFmt(m);
+    const size = cliffSize(mw.delta);
+    out.innerHTML = '';
+    const back = backLinks(); if (back) out.appendChild(back);
+    const verdict = el('p', { class: 'cmp-verdict' });
+    if (mw.p < 0.05) {
+      verdict.append(el('b', {}, 'The two groups differ'), ' (p = ' + fmtP(mw.p) + '). ',
+        mw.delta !== 0 ? el('span', {}, 'Group A tends to have a ', el('b', {}, mw.delta > 0 ? 'higher' : 'lower'), ' ' + m.label) : 'The values are spread differently',
+        ' (median ' + fmt(mw.medA) + ' against ' + fmt(mw.medB) + '). The difference is ', el('b', {}, size), ' (Cliff’s delta ' + fmtSigned(mw.delta, 2) + ').',
+        size === 'negligible' ? ' With many genes even a tiny difference gets a small p-value; the effect size says this one is too small to matter much.' : '');
+    } else {
+      verdict.append(el('b', {}, 'No clear difference'), ' (p = ' + fmtP(mw.p) + '): median ' + fmt(mw.medA) + ' against ' + fmt(mw.medB) + ', Cliff’s delta ' + fmtSigned(mw.delta, 2) + ' (' + size + ').',
+        Math.min(mw.n1, mw.n2) < 10 ? ' With so few genes in one group, only a large difference could have been detected.' : '');
+    }
+    const title = m.label + ': ' + G.nameA + ' vs ' + G.nameB;
+    const makeSvg = o => boxPlotSVG([cmpBox(pa, G.nameA, 0, S.dots), cmpBox(pb, G.nameB, 1, S.dots)], fmt, Object.assign({ title, xLabel: m.label }, o));
+    const dotsCb = el('input', { type: 'checkbox' });
+    dotsCb.checked = S.dots;
+    dotsCb.addEventListener('change', () => { S.dots = dotsCb.checked; drawOne(); });
+    const t = el('table', { class: 'simple-table cmp-table' },
+      el('tr', {}, el('th', {}, ''), el('th', { class: 'num' }, 'Group A'), el('th', { class: 'num' }, 'Group B')),
+      ...[['Genes with a value', fmtInt(mw.n1), fmtInt(mw.n2)], ['Median', fmt(mw.medA), fmt(mw.medB)], ['Middle half (25–75%)', fmt(mw.q1A) + ' – ' + fmt(mw.q3A), fmt(mw.q1B) + ' – ' + fmt(mw.q3B)], ['Mean', fmt(mw.meanA), fmt(mw.meanB)]]
+        .map(([k, x, y]) => el('tr', {}, el('td', {}, k), el('td', { class: 'num' }, x), el('td', { class: 'num' }, y))));
+    out.append(
+      el('div', { class: 'chart-head' }, el('h4', { class: 'sub-h' }, m.label, ' ', effectChip(mw.delta)), figureLinks(fmt2 => downloadChartSVG(o => makeSvg(o), safeFileName(g.name + '_' + m.key + '_comparison'), title, fmt2), 'the box plot')),
+      verdict, makeSvg({ mode: app.mode() }),
+      el('p', { class: 'muted small' }, 'Line = 5–95% of the genes, box = the middle half (25–75%), dark mark = median. ',
+        el('label', { class: 'inline-check' }, dotsCb, ' Show single genes as dots'), ' (groups of up to ' + BOX_MAX_DOTS + ' genes; point at a dot to see the gene).'),
+      t,
+      el('p', { class: 'cmp-detail' }, 'Mann–Whitney U = ' + fmtInt(mw.U1) + ' (' + mw.method + (mw.z != null ? ', z = ' + fmtSigned(mw.z, 2) : '') + '), two-sided p = ' + fmtP(mw.p) + '. Cliff’s delta = ' + fmtSigned(mw.delta, 3) + ': a gene picked at random from group A has the higher value ' + (mw.superiority * 100).toFixed(1) + '% of the time against one from group B (ties count half; 50% = no difference).' + (G.overlap ? ' ' + plural(G.overlap, 'gene') + ' in both groups were kept in group A only.' : '')),
+      geneByGene(m, G, pa, pb, mw));
+  };
+  /** Table of single genes with their value and score, for one measure. */
+  const geneByGene = (m, G, pa, pb, mw) => {
+    const sec = el('div', { class: 'gene-sec' });
+    const fmt = cmpFmt(m);
+    const render = () => {
+      sec.innerHTML = '';
+      const side = S.geneSide === 'B' ? 'B' : 'A';
+      const mine = side === 'A' ? pa : pb, other = side === 'A' ? pb : pa;
+      const otherName = side === 'A' ? 'group B' : 'group A';
+      const sc = geneScores(mine, other.map(p => p.v));
+      const by = S.geneSort || 'score';
+      const dir = S.geneDesc === false ? 1 : -1;
+      sc.sort((x, y) => (by === 'value' ? x.v - y.v : by === 'name' ? x.name.localeCompare(y.name) : x.score - y.score) * dir || x.name.localeCompare(y.name));
+      const mean = sc.reduce((s, x) => s + x.score, 0) / (sc.length || 1);
+      const sideSel = el('select', { 'aria-label': 'Genes to list' },
+        el('option', { value: 'A' }, 'Group A: ' + truncate(G.nameA, 40) + ' (' + fmtInt(pa.length) + ')'),
+        el('option', { value: 'B' }, 'Group B: ' + truncate(G.nameB, 40) + ' (' + fmtInt(pb.length) + ')'));
+      sideSel.value = side;
+      sideSel.addEventListener('change', () => { S.geneSide = sideSel.value; render(); const s2 = $('select', sec); if (s2) s2.focus(); });
+      const fileBase = cmpFileBase(g, m.key + '_genes_' + G.nameA + '_vs_' + G.nameB);
+      const rowsOut = () => {
+        const both = [['A', geneScores(pa, pb.map(p => p.v))], ['B', geneScores(pb, pa.map(p => p.v))]];
+        return [['group', 'locus_tag', 'gene', 'product', m.label, 'score against the other group', 'share of the other group with a lower value']]
+          .concat(both.flatMap(([gr, list]) => list.sort((x, y) => y.score - x.score).map(x => [gr, x.x.f.locus, x.x.f.gene, x.x.f.product, +x.v.toFixed(4), +x.score.toFixed(4), +x.below.toFixed(4)])));
+      };
+      sec.append(el('div', { class: 'chart-head' }, el('h4', { class: 'sub-h' }, 'Gene by gene'),
+        el('span', { class: 'actions' }, downloadGroup('All genes of both groups', [
+          ['CSV', () => download(fileBase + '.csv', toDelimited(rowsOut()), 'text/csv')],
+          ['Excel', () => downloadXlsx(fileBase + '.xlsx', [{ name: 'Genes', rows: rowsOut(), widths: [7, 16, 10, 46, 12, 14, 16], filter: true }, xlsxInfoSheet(app, [['Measure', m.label], ['Group A', G.nameA + ' (' + plural(pa.length, 'gene') + ')'], ['Group B', G.nameB + ' (' + plural(pb.length, 'gene') + ')'], ['Score', 'share of the other group’s genes with a lower value minus the share with a higher value (−1 to +1); the mean score of group A is Cliff’s delta']])])]
+        ]))),
+        el('p', { class: 'block-sub' }, 'Which genes make the difference? Each gene gets a ', el('b', {}, 'score'), ': the share of ' + otherName + ' genes with a lower value minus the share with a higher value, from −1 (lower than all of them) to +1 (higher than all of them). ',
+          side === 'A' ? 'The average score of the group A genes is Cliff’s delta (here ' + fmtSigned(mean, 2) + '), so the genes at the top of the list push the groups apart the most. Click a gene to open it.'
+            : 'The average score of the group B genes is minus Cliff’s delta (here ' + fmtSigned(mean, 2) + '). Click a gene to open it.'),
+        el('label', { class: 'gf-field gene-side' }, 'Genes to list', sideSel));
+      const head = (key, text, cls) => {
+        const active = by === key;
+        const th = el('th', { class: cls || '', 'aria-sort': active ? (dir < 0 ? 'descending' : 'ascending') : 'none' });
+        th.appendChild(el('button', { class: 'th-sort', onclick: () => { if (S.geneSort === key || (!S.geneSort && key === 'score')) S.geneDesc = S.geneDesc === false; else { S.geneSort = key; S.geneDesc = key !== 'name'; } render(); } }, text, active ? (dir < 0 ? ' ↓' : ' ↑') : ''));
+        return th;
+      };
+      const tbl = el('table', { class: 'simple-table gene-score-table' }, el('tr', {}, el('th', { class: 'num' }, '#'), head('name', 'Gene'), el('th', {}, 'Locus tag'), el('th', {}, 'Product'), head('value', m.label, 'num'), head('score', 'Score', 'num'), el('th', { title: 'Where the gene falls among the ' + otherName + ' genes' }, 'Share of ' + otherName + ' below')));
+      const shown = sc.slice(0, 400);
+      shown.forEach((x, i) => {
+        const w = Math.abs(x.score) * 50;
+        tbl.appendChild(el('tr', { class: 'click', tabindex: 0, onclick: () => app.select(x.x.f, { from: 'table' }), onkeydown: e => { if (e.key === 'Enter') app.select(x.x.f, { from: 'table' }); } },
+          el('td', { class: 'num muted' }, String(i + 1)), el('td', { class: 'gname' }, x.x.f.gene || ''), el('td', { class: 'mono small' }, x.x.f.locus || ''), el('td', { class: 'small' }, truncate(x.x.f.product || '', 60)),
+          el('td', { class: 'num' }, fmt(x.v)),
+          el('td', { class: 'num score-cell' }, el('span', { class: 'score-bar', 'aria-hidden': 'true' }, el('span', { class: x.score >= 0 ? 'pos' : 'neg', style: { width: w + '%', [x.score >= 0 ? 'left' : 'right']: '50%' } })), fmtSigned(x.score, 2)),
+          el('td', { class: 'num' }, Math.round(x.below * 100) + '%')));
+      });
+      sec.appendChild(el('div', { class: 'table-scroll' }, tbl));
+      if (sc.length > shown.length) sec.appendChild(el('p', { class: 'muted small' }, 'Showing ' + fmtInt(shown.length) + ' of ' + fmtInt(sc.length) + ' genes; the CSV and Excel files have them all.'));
+    };
+    render();
+    return sec;
+  };
+
+  /* ----- every chosen measure ----- */
+  const runScan = (thenCharts) => {
+    S.a = selA.value; S.b = selB.value;
+    const G = groups();
+    out.innerHTML = '';
+    const active = cmpActiveMeasures(app, measures);
+    if (!active.length) { S.scan = null; S.view = 'one'; out.appendChild(el('p', { class: 'note-box' }, 'No measures are ticked under “Measures to test”. Tick at least one kind.')); return; }
+    if (G.A.length < 3 || G.B.length < 3) { S.scan = null; out.appendChild(el('p', { class: 'note-box' }, 'Both groups need at least 3 genes (now ' + fmtInt(G.A.length) + ' and ' + fmtInt(G.B.length) + ').')); return; }
+    const rows = [];
+    for (const m of active) {
+      const a = cmpValues(m, G.A), b = cmpValues(m, G.B);
+      if (a.length < 3 || b.length < 3) continue;
+      const mw = mannWhitney(a, b);
+      if (mw && Number.isFinite(mw.p)) rows.push({ m, mw });
+    }
+    const q = bhAdjust(rows.map(r => r.mw.p));
+    rows.forEach((r, i) => { r.q = q[i]; });
+    S.scan = { rows, G, ref: caiState(app).label };
+    const keys = new Set(rows.map(r => r.m.key));
+    S.ticked = new Set([...S.ticked].filter(k => keys.has(k)));
+    if (thenCharts && S.ticked.size) drawCharts(); else drawScan();
+  };
+  const drawScan = () => {
+    S.view = 'scan';
+    const { rows, G } = S.scan;
+    out.innerHTML = '';
+    const sig = rows.filter(r => r.q < 0.05);
+    const real = sig.filter(r => cliffSize(r.mw.delta) !== 'negligible');
+    const kinds = [...new Set(rows.map(r => r.m.group))];
+    const allOn = cmpActiveMeasures(app, measures).length === measures.length;
+    out.appendChild(el('p', { class: 'cmp-verdict' }, 'Tested ', el('b', {}, fmtInt(rows.length)), ' measures' + (allOn ? '' : ' (' + kinds.join(', ') + ')') + ' for ', el('b', {}, G.nameA), ' (' + fmtInt(G.A.length) + ' genes) against ', el('b', {}, G.nameB), ' (' + fmtInt(G.B.length) + '): ',
+      el('b', {}, fmtInt(sig.length)), ' differ (false discovery rate below 5%)' + (sig.length ? ', ' + fmtInt(real.length) + ' of them more than negligibly' : '') + '. Click a measure to see it on its own, or tick several to see their charts together.'));
+    const table = el('table', { class: 'simple-table cmp-scan' + (S.shadeAll ? ' shade-all' : '') });
+    const shadeCb = el('input', { type: 'checkbox' });
+    shadeCb.checked = !!S.shadeAll;
+    shadeCb.addEventListener('change', () => { S.shadeAll = shadeCb.checked; table.classList.toggle('shade-all', S.shadeAll); });
+    out.appendChild(el('div', { class: 'eff-key' }, el('span', { class: 'eff-key-label' }, 'Size of the difference (Cliff’s δ):'), effectLegend(),
+      el('span', { class: 'muted small' }, 'Rows are shaded when the measure differs (q < 0.05).'),
+      el('label', { class: 'inline-check small' }, shadeCb, ' Shade every row')));
+    // tick boxes
+    const headCb = el('input', { type: 'checkbox', 'aria-label': 'Tick every measure in the list' });
+    const showBtn = el('button', { class: 'btn small primary', onclick: () => drawCharts() });
+    const updT = () => {
+      const n = rows.filter(r => S.ticked.has(r.m.key)).length;
+      showBtn.textContent = n ? 'Show charts for the ' + plural(n, 'ticked measure') : 'Tick measures to see their charts';
+      showBtn.disabled = !n;
+      headCb.checked = n > 0 && n === rows.length; headCb.indeterminate = n > 0 && n < rows.length;
+    };
+    const tickSet = keys => { S.ticked = new Set(keys); for (const c of $$('input.row-tick', table)) c.checked = S.ticked.has(c.dataset.k); updT(); };
+    headCb.addEventListener('change', () => tickSet(headCb.checked ? rows.map(r => r.m.key) : []));
+    out.appendChild(el('div', { class: 'tick-bar' }, showBtn,
+      el('span', { class: 'muted small' }, 'Tick:'),
+      el('button', { class: 'link-btn', disabled: !sig.length, onclick: () => tickSet(sig.map(r => r.m.key)) }, 'the ' + fmtInt(sig.length) + ' that differ'),
+      el('button', { class: 'link-btn', disabled: !real.length, onclick: () => tickSet(real.map(r => r.m.key)) }, 'those that differ more than negligibly (' + fmtInt(real.length) + ')'),
+      el('button', { class: 'link-btn', onclick: () => tickSet([]) }, 'none')));
+    // sortable header
+    const cols = [['measure', 'Measure'], ['kind', 'Kind'], ['medA', 'Median A', 'num'], ['medB', 'Median B', 'num'], ['delta', 'Cliff’s δ', 'num'], ['effect', 'Effect'], ['p', 'p', 'num'], ['q', 'q (FDR)', 'num']];
+    const hr = el('tr', {}, el('th', { class: 'tick' }, headCb));
+    for (const [key, text, cls] of cols) {
+      const active = S.sort.by === key;
+      hr.appendChild(el('th', { class: cls || '', 'aria-sort': active ? (S.sort.desc ? 'descending' : 'ascending') : 'none' },
+        el('button', { class: 'th-sort', title: 'Sort by ' + text, onclick: () => { if (S.sort.by === key) S.sort.desc = !S.sort.desc; else S.sort = { by: key, desc: key === 'effect' || key === 'delta' }; drawScan(); } }, text, active ? (S.sort.desc ? ' ↓' : ' ↑') : '')));
+    }
+    table.appendChild(hr);
+    for (const r of sortScanRows(rows, S.sort)) {
+      const f = cmpFmt(r.m);
+      const cb = el('input', { type: 'checkbox', class: 'row-tick', 'aria-label': 'Tick ' + r.m.label + ' (' + r.m.group + ')', dataset: { k: r.m.key } });
+      cb.checked = S.ticked.has(r.m.key);
+      cb.addEventListener('change', () => { if (cb.checked) S.ticked.add(r.m.key); else S.ticked.delete(r.m.key); updT(); });
+      const open = () => { selM.value = r.m.key; S.backTo = 'scan'; runOne(); };
+      table.appendChild(el('tr', { class: 'click eff-' + cliffSize(r.mw.delta) + (r.q < 0.05 ? ' hit' : ''), tabindex: 0, onclick: open, onkeydown: e => { if (e.key === 'Enter' && e.target === e.currentTarget) open(); } },
+        el('td', { class: 'tick', onclick: e => { e.stopPropagation(); if (e.target === e.currentTarget) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); } } }, cb),
+        el('td', {}, r.m.label), el('td', { class: 'muted' }, r.m.group), el('td', { class: 'num' }, f(r.mw.medA)), el('td', { class: 'num' }, f(r.mw.medB)),
+        el('td', { class: 'num' }, fmtSigned(r.mw.delta, 2)), el('td', {}, effectChip(r.mw.delta)), el('td', { class: 'num' }, fmtP(r.mw.p)), el('td', { class: 'num' }, fmtP(r.q))));
+    }
+    out.appendChild(el('div', { class: 'table-scroll tall' }, table));
+    updT();
+    out.appendChild(el('p', { class: 'cmp-detail' }, 'q = the p-value corrected for testing many measures at once (Benjamini–Hochberg false discovery rate): among measures with q below 0.05, on average at most 5% are expected to be false hits (strictly, this holds for independent or positively correlated measures, and many here are linked). A codon’s RSCU and its amino acid’s share are related, so read related lines as one finding. Effect sizes: Cliff’s delta with the thresholds of Romano et al. (2006).'));
+    out.appendChild(el('p', { class: 'muted small' }, 'To compare several groups at once against one reference group, open the ', el('button', { class: 'link-btn', onclick: () => openStatsSection(app, 'heatmap') }, 'Heat map'), ' section.'));
+  };
+
+  /* ----- charts of the ticked measures, and their genes ----- */
+  const drawCharts = () => {
+    if (!S.scan) return;
+    const { rows, G } = S.scan;
+    const list = sortScanRows(rows, S.sort).filter(r => S.ticked.has(r.m.key));
+    if (!list.length) { drawScan(); return; }
+    S.view = 'charts';
+    out.innerHTML = '';
+    const items = list.map(r => ({ r, a: cmpPoints(r.m, G.A), b: cmpPoints(r.m, G.B) }));
+    const fileBase = cmpFileBase(g, G.nameA + '_vs_' + G.nameB);
+    const figTitle = G.nameA + ' (A) vs ' + G.nameB + ' (B)';
+    const oneTitle = it => it.r.m.label + ' (Cliff’s δ = ' + fmtSigned(it.r.mw.delta, 2) + ', ' + cliffSize(it.r.mw.delta) + '; q = ' + fmtP(it.r.q) + ')';   // the groups are named in the chart
+    const oneSvg = (it, o) => boxPlotSVG([cmpBox(it.a, G.nameA, 0, S.dots), cmpBox(it.b, G.nameB, 1, S.dots)], cmpFmt(it.r.m), Object.assign({ title: oneTitle(it), xLabel: it.r.m.label }, o));
+    const saveZip = async fmt => {
+      app.busy('Packing ' + plural(items.length, 'chart') + '…');
+      await nextFrame();
+      try {
+        const enc = new TextEncoder(), files = [], used = new Map();
+        for (const it of items) {
+          const text = chartSvgText(o => oneSvg(it, o), oneTitle(it));
+          let name = safeFileName(it.r.m.label.replace(/%/g, 'pct') + (it.r.m.group === 'Your codon patterns' ? '_pattern' : ''));
+          const k = used.get(name) || 0; used.set(name, k + 1); if (k) name += '_' + (k + 1);
+          if (fmt === 'png') files.push({ name: name + '.png', data: new Uint8Array(await (await svgToPngBlob(text, 3)).arrayBuffer()) });
+          else files.push({ name: name + '.svg', data: enc.encode(text) });
+        }
+        download(fileBase + '_charts_' + fmt.toUpperCase() + '.zip', await makeZip(files, 'application/zip'), 'application/zip');
+      } catch (e) { console.error(e); toast('The charts could not be packed (' + (e.message || e) + ').', 'error'); }
+      finally { app.done(); }
+    };
+    const dotsCb = el('input', { type: 'checkbox' });
+    dotsCb.checked = S.dots;
+    dotsCb.addEventListener('change', () => { S.dots = dotsCb.checked; drawCharts(); });
+    out.append(el('div', { class: 'cmp-backs' }, el('button', { class: 'link-btn', onclick: () => drawScan() }, '← Back to the list of measures')),
+      el('div', { class: 'chart-head' }, el('h4', { class: 'sub-h' }, plural(items.length, 'measure') + ': ' + G.nameA + ' (A) against ' + G.nameB + ' (B)')),
+      el('div', { class: 'actions dl-row' },
+        downloadGroup('All charts in one figure', [['SVG', () => downloadChartSVG(o => cmpFigureSVG(items, G, Object.assign({ dots: S.dots }, o)), fileBase + '_charts', figTitle, 'svg')], ['PNG', () => downloadChartSVG(o => cmpFigureSVG(items, G, Object.assign({ dots: S.dots }, o)), fileBase + '_charts', figTitle, 'png')]]),
+        downloadGroup('Each chart as its own file (zip)', [['SVG', () => saveZip('svg')], ['PNG', () => saveZip('png')]]),
+        downloadGroup('Numbers', [['Excel', () => excel(list)]])),
+      el('p', { class: 'muted small' }, el('span', { class: 'key-sw', style: { background: rgba(CAT[app.mode()][0], 0.3), borderColor: CAT[app.mode()][0] } }), ' A = ' + G.nameA + ' (' + plural(G.A.length, 'gene') + ')   ',
+        el('span', { class: 'key-sw', style: { background: rgba(CAT[app.mode()][1], 0.3), borderColor: CAT[app.mode()][1] } }), ' B = ' + G.nameB + ' (' + plural(G.B.length, 'gene') + '). ',
+        el('label', { class: 'inline-check' }, dotsCb, ' Show single genes as dots'), '. Click a chart title to open that measure on its own.'));
+    const grid = el('div', { class: 'cmp-grid' });
+    for (const it of items) {
+      const open = () => { selM.value = it.r.m.key; S.backTo = 'charts'; runOne(); };
+      grid.appendChild(el('div', { class: 'cmp-chart' },
+        el('button', { class: 'cmp-chart-title link-btn', onclick: open, title: 'Open ' + it.r.m.label + ' on its own' }, it.r.m.label, el('span', { class: 'muted' }, ' · ' + it.r.m.group)),
+        cmpPanelSVG(it, G, { mode: app.mode(), dots: S.dots, noTitle: true })));
+    }
+    out.appendChild(grid);
+    out.appendChild(geneMatrix(items, G));
+  };
+  /** Genes × ticked measures: each cell is the gene's score; genes sorted by how much they follow the group difference. */
+  const geneMatrix = (items, G) => {
+    const sec = el('div', { class: 'gene-sec' });
+    const render = () => {
+      sec.innerHTML = '';
+      const side = S.geneSide === 'B' ? 'B' : 'A';
+      const genes = side === 'A' ? G.A : G.B;
+      const per = items.map(it => {
+        const mine = side === 'A' ? it.a : it.b, other = side === 'A' ? it.b : it.a;
+        return new Map(geneScores(mine, other.map(p => p.v)).map(s => [s.x.uid, s]));
+      });
+      // direction of each difference, seen from the listed group
+      const sign = items.map(it => Math.sign(it.r.mw.delta) * (side === 'A' ? 1 : -1));
+      const rows = genes.map(x => {
+        let s = 0, n = 0;
+        per.forEach((mp, j) => { const v = mp.get(x.uid); if (v && sign[j]) { s += v.score * sign[j]; n++; } });
+        return { x, follow: n ? s / n : 0 };
+      }).sort((a, b) => b.follow - a.follow);
+      const cap = 150, shown = rows.slice(0, cap);
+      const sideSel = el('select', { 'aria-label': 'Genes to show' },
+        el('option', { value: 'A' }, 'Group A: ' + truncate(G.nameA, 40) + ' (' + fmtInt(G.A.length) + ')'),
+        el('option', { value: 'B' }, 'Group B: ' + truncate(G.nameB, 40) + ' (' + fmtInt(G.B.length) + ')'));
+      sideSel.value = side;
+      sideSel.addEventListener('change', () => { S.geneSide = sideSel.value; render(); const s2 = $('select', sec); if (s2) s2.focus(); });
+      const otherName = side === 'A' ? 'group B' : 'group A';
+      const numCb = el('input', { type: 'checkbox' });
+      numCb.checked = !!S.geneNumbers;
+      numCb.addEventListener('change', () => { S.geneNumbers = numCb.checked; render(); });
+      const make = o => heatGridSVG(Object.assign({
+        rows: shown.map(r => ({ label: cmpGeneName(r.x), italic: !!r.x.f.gene })), cols: items.map(it => ({ label: it.r.m.label })),
+        cell: (ri, ci) => { const s = per[ci].get(shown[ri].x.uid); return s ? { v: s.score } : null; },
+        numbers: S.geneNumbers, legendTitle: 'Gene score against ' + otherName, lowText: 'lower than most ' + otherName + ' genes', highText: 'higher than most ' + otherName + ' genes', emptyText: 'no value', title: 'Gene scores'
+      }, o));
+      const title = 'Gene scores: ' + (side === 'A' ? G.nameA + ' against ' + G.nameB : G.nameB + ' against ' + G.nameA);
+      const fileBase = cmpFileBase(g, 'gene_scores_' + (side === 'A' ? G.nameA + '_vs_' + G.nameB : G.nameB + '_vs_' + G.nameA));
+      const xl = () => {
+        const head = ['group', 'locus_tag', 'gene', 'product', 'follows the difference'].concat(items.flatMap(it => [it.r.m.label, it.r.m.label + ' score']));
+        const lines = [head];
+        for (const [gr, gs, sd] of [['A', G.A, 'A'], ['B', G.B, 'B']]) {
+          const pm = items.map(it => new Map(geneScores(sd === 'A' ? it.a : it.b, (sd === 'A' ? it.b : it.a).map(p => p.v)).map(s => [s.x.uid, s])));
+          const sg = items.map(it => Math.sign(it.r.mw.delta) * (sd === 'A' ? 1 : -1));
+          for (const x of gs) {
+            let s = 0, n = 0; const vals = [];
+            pm.forEach((mp, j) => { const v = mp.get(x.uid); vals.push(v ? +v.v.toFixed(4) : '', v ? +v.score.toFixed(4) : ''); if (v && sg[j]) { s += v.score * sg[j]; n++; } });
+            lines.push([gr, x.f.locus, x.f.gene, x.f.product, n ? +(s / n).toFixed(4) : ''].concat(vals));
+          }
+        }
+        downloadXlsx(fileBase + '.xlsx', [{ name: 'Gene scores', rows: lines, widths: [7, 16, 10, 44, 12], filter: true },
+          xlsxInfoSheet(app, [['Group A', G.nameA + ' (' + plural(G.A.length, 'gene') + ')'], ['Group B', G.nameB + ' (' + plural(G.B.length, 'gene') + ')'],
+            ['Score', 'for a gene: the share of the other group’s genes with a lower value minus the share with a higher value (−1 to +1). The mean score of group A equals Cliff’s delta.'],
+            ['Follows the difference', 'mean of the gene’s scores, each turned so that the direction in which its group differs counts as positive']])]);
+      };
+      sec.append(el('div', { class: 'chart-head' }, el('h4', { class: 'sub-h' }, 'Gene by gene for these measures'),
+        el('span', { class: 'actions' }, downloadGroup('Heat map', [['SVG', () => downloadChartSVG(make, fileBase, title, 'svg')], ['PNG', () => downloadChartSVG(make, fileBase, title, 'png')], ['Excel', xl]]))),
+        el('p', { class: 'block-sub' }, 'Each cell is a gene’s score for one measure: the share of ' + otherName + ' genes with a lower value minus the share with a higher value (red = higher than most of them, blue = lower). Genes at the top follow the direction of the group difference in most of these measures, so they contribute most. Point at a cell for the numbers; click it to open the gene.'),
+        el('div', { class: 'gene-matrix-opts' }, el('label', { class: 'gf-field gene-side' }, 'Genes to show', sideSel), el('label', { class: 'inline-check small' }, numCb, ' Show the scores in the cells')));
+      const svg = make({ mode: app.mode() });
+      wireHeatGrid(svg, (ri, ci) => {
+        const r = shown[ri], it = items[ci], s = per[ci].get(r.x.uid);
+        const f = cmpFmt(it.r.m);
+        return '<b>' + esc(cmpGeneName(r.x)) + '</b> ' + esc(truncate(r.x.f.product || '', 50)) + '<br>' + esc(it.r.m.label) + ': ' + (s ? esc(f(s.v)) + '<br>Score ' + fmtSigned(s.score, 2) + ' — ' + Math.round(s.below * 100) + '% of ' + otherName + ' genes are lower' : 'no value');
+      }, ri => app.select(shown[ri].x.f, { from: 'table' }));
+      sec.appendChild(el('div', { class: 'heat-scroll' }, svg));
+      if (rows.length > cap) sec.appendChild(el('p', { class: 'muted small' }, 'Showing the ' + cap + ' genes that follow the difference most, of ' + fmtInt(rows.length) + '; the Excel file has every gene.'));
+    };
+    render();
+    return sec;
+  };
+
+  /* ----- Excel ----- */
+  const excel = only => {
+    const isOne = S.view === 'one' && S.result && !only;
+    const list = only || (isOne ? [{ m: S.result.m, mw: S.result.mw, q: null }] : S.scan ? S.scan.rows : null);
+    const G = isOne ? S.result.G : S.scan ? S.scan.G : null;
+    if (!list || !G) { toast('Compare a measure, or test every measure, first.'); return; }
+    const head = ['Measure', 'Kind', 'Genes A', 'Genes B', 'Median A', 'Median B', 'Mean A', 'Mean B', "Cliff's delta", 'Size', 'A above B (probability)', 'Mann-Whitney U', 'z', 'p', 'q (FDR)', 'Method'];
+    const r3 = v => v == null || !Number.isFinite(v) ? '' : +v.toFixed(4);
+    const rows = [head].concat(sortScanRows(list, S.sort).map(r => [r.m.label, r.m.group, r.mw.n1, r.mw.n2, r3(r.mw.medA), r3(r.mw.medB), r3(r.mw.meanA), r3(r.mw.meanB), r3(r.mw.delta), cliffSize(r.mw.delta), r3(r.mw.superiority), Math.round(r.mw.U1 * 10) / 10, r.mw.z == null ? '' : r3(r.mw.z), r.mw.p, r.q == null ? '' : r.q, r.mw.method]));
+    // genes with their values for the measures in the file
+    const ms = list.map(r => r.m).slice(0, 120);
+    const members = [['group', 'locus_tag', 'gene', 'product'].concat(ms.map(m => m.label))].concat(
+      G.A.map(x => ['A', x.f.locus, x.f.gene, x.f.product].concat(ms.map(m => { const v = m.get(x); return v == null || !Number.isFinite(v) ? '' : +v.toFixed(4); }))),
+      G.B.map(x => ['B', x.f.locus, x.f.gene, x.f.product].concat(ms.map(m => { const v = m.get(x); return v == null || !Number.isFinite(v) ? '' : +v.toFixed(4); }))));
+    downloadXlsx(safeFileName(g.name) + '_group_comparison' + (only ? '_ticked' : '') + '.xlsx', [
+      { name: 'Comparison', rows, widths: [26, 26, 9, 9, 10, 10, 10, 10, 12, 11, 14, 15, 8, 12, 12, 40], filter: true },
+      { name: 'Genes', rows: members, widths: [7, 16, 10, 50], filter: true },
+      xlsxInfoSheet(app, [['Group A', G.nameA + ' — ' + plural(G.A.length, 'gene')], ['Group B', G.nameB + ' — ' + plural(G.B.length, 'gene')],
+        ['Genes used', 'Protein-coding genes without a note (no pseudogenes, partial genes or genes with internal stop codons)'],
+        ['Test', 'Mann-Whitney U (Wilcoxon rank-sum), two-sided; exact for groups of up to 25 genes without tied values, otherwise the normal approximation with corrections for ties and continuity (Mann & Whitney 1947, Ann Math Stat 18:50-60)'],
+        ['Effect size', "Cliff's delta, -1 to +1 (Cliff 1993, Psychol Bull 114:494-509); |delta| < 0.147 negligible, < 0.33 small, < 0.474 medium, otherwise large (Romano et al. 2006)"],
+        ['Multiple testing', isOne ? 'one measure, no correction' : 'Benjamini-Hochberg false discovery rate over the ' + plural(S.scan.rows.length, 'measure') + ' tested (Benjamini & Hochberg 1995, J R Stat Soc B 57:289-300)'],
+        ['CAI reference', (isOne ? S.result.ref : S.scan.ref) || caiState(app).label]])]);
+  };
+
+  const picker = measurePicker(app, measures, () => { setScanLabel(); if (S.view === 'scan' || S.view === 'charts') runScan(S.view === 'charts'); });
+  setScanLabel();
+  blk.append(el('h3', {}, 'Compare two groups of genes'),
+    el('p', { class: 'block-sub' }, 'Do two groups of genes differ in codon usage, composition or length? For example cell wall genes against all other genes, plasmid against chromosome genes, or one of your highlight sets. The Mann–Whitney test does not assume that the values follow a bell curve; Cliff’s delta says how big the difference is.'),
+    defs.length ? el('div', { class: 'cmp-controls' },
+      el('label', {}, 'Group A', selA), el('label', {}, 'Group B', selB), el('label', {}, 'Measure', selM),
+      el('div', { class: 'cmp-buttons' },
+        el('button', { class: 'btn small primary', onclick: () => { S.backTo = null; runOne(); } }, 'Compare'),
+        scanBtn,
+        el('button', { class: 'btn small ghost', onclick: () => excel() }, 'Excel (.xlsx)'))) : el('p', { class: 'muted' }, 'No groups of protein-coding genes are available.'),
+    defs.length ? picker : '',
+    out);
+  // a new CAI reference changes CAI values: work the shown result out again
+  app._cmpRefresh = () => { if (!blk.isConnected) return; if (S.view === 'scan' || S.view === 'charts') runScan(S.view === 'charts'); else runOne(); };
+  selM.addEventListener('change', () => runOne());
+  for (const x of [selA, selB]) x.addEventListener('change', () => { if (S.view === 'scan' || S.view === 'charts') runScan(S.view === 'charts'); else { S.backTo = null; runOne(); } });
+  if (defs.length) { if (S.view === 'scan' || S.view === 'charts') runScan(S.view === 'charts'); else runOne(); }
+  return blk;
+}
+
+/* ---------------- Heat map: several groups against one reference group ---------------- */
+function heatmapCompute(app, defs, refValue, groupValues, measures) {
+  const ok = geneCodonData(app.genome).genes.filter(x => x.ok), N = ok.length;
+  const vals = measures.map(m => { const a = new Float64Array(N); for (let i = 0; i < N; i++) { const v = m.get(ok[i]); a[i] = v != null && Number.isFinite(v) ? v : NaN; } return a; });
+  const refDef = refValue === 'rest' ? null : defs.find(d => d.value === refValue);
+  const refIdx = refDef ? ok.map((x, i) => refDef.pred(x.f) ? i : -1).filter(i => i >= 0) : null;
+  const allIdx = refIdx ? null : ok.map((x, i) => i);
+  const cols = [];
+  for (const v of groupValues) {
+    const d = defs.find(x => x.value === v);
+    if (!d || v === refValue) continue;
+    const inA = new Uint8Array(N), idxA = [];
+    ok.forEach((x, i) => { if (d.pred(x.f)) { inA[i] = 1; idxA.push(i); } });
+    const idxB = (refIdx || allIdx).filter(i => !inA[i]);
+    cols.push({ def: d, idxA, idxB, overlap: refIdx ? refIdx.length - idxB.length : 0, genes: idxA.map(i => ok[i]) });
+  }
+  const cells = measures.map((m, mi) => cols.map(c => {
+    const arr = vals[mi], a = [], b = [];
+    for (const i of c.idxA) if (arr[i] === arr[i]) a.push(arr[i]);
+    for (const i of c.idxB) if (arr[i] === arr[i]) b.push(arr[i]);
+    if (a.length < 3 || b.length < 3) return null;
+    const mw = mannWhitney(a, b);
+    return mw && Number.isFinite(mw.p) ? { mw } : null;
+  }));
+  const flat = cells.flat().filter(Boolean);
+  const q = bhAdjust(flat.map(c => c.mw.p));
+  flat.forEach((c, i) => { c.q = q[i]; });
+  const refName = refValue === 'rest' ? 'All other genes' : refDef ? refDef.label : 'Reference';
+  return { measures, cols, cells, refValue, refName, refGenes: refIdx ? refIdx.map(i => ok[i]) : null, nTests: flat.length };
+}
+function heatmapBlock(app) {
+  const H = app._hm || (app._hm = { ref: 'rest', groups: null, order: 'kind', onlyDiff: false, numbers: false });
+  const blk = el('div', { class: 'block hm-block', id: 'hmBlock' });
+  const g = app.genome, defs = cmpGroupDefs(app), measures = cmpMeasures(app);
+  blk.append(el('h3', {}, 'Heat map: several groups against one reference'),
+    el('p', { class: 'block-sub' }, 'Each column is a group of genes, each row a measure. The colour says how the group differs from the reference group: red = higher, blue = lower, grey = no difference (Cliff’s delta, −1 to +1). A dot marks the differences that are unlikely to be chance (q < 0.05 after correcting for all the tests in the map). Point at a cell for the numbers; click it to open that comparison.'));
+  if (!defs.length) { blk.appendChild(el('p', { class: 'muted' }, 'No groups of protein-coding genes are available.')); return blk; }
+  if (!H.groups) {
+    const pg = defs.filter(d => d.value.startsWith('pgcat:')).map(d => d.value);
+    H.groups = pg.length >= 2 ? pg : defs.slice(0, 6).map(d => d.value);
+  }
+  H.groups = H.groups.filter(v => defs.some(d => d.value === v));
+  if (H.ref !== 'rest' && !defs.some(d => d.value === H.ref)) H.ref = 'rest';
+  const out = el('div', { class: 'hm-out' });
+  let timer = null;
+  const later = () => { clearTimeout(timer); timer = setTimeout(run, 450); sumText(); };   // only called from clicks, after sumText exists
+  const refSel = cmpGroupSelect(defs, H.ref, 'All other genes (the genes outside each group)', 'Reference group');
+  refSel.addEventListener('change', () => { H.ref = refSel.value; later(); });
+  // groups to show, by section
+  const groupsBox = el('div', { class: 'hm-groups' });
+  const renderGroups = () => {
+    groupsBox.innerHTML = '';
+    for (const sec of [...new Set(defs.map(d => d.group))]) {
+      const ds = defs.filter(d => d.group === sec);
+      groupsBox.appendChild(el('fieldset', { class: 'mpick-set' },
+        el('legend', {}, sec, ' ', el('button', { class: 'link-btn', onclick: () => { H.groups = [...new Set(H.groups.concat(ds.map(d => d.value)))]; renderGroups(); later(); } }, 'all'), ' · ',
+          el('button', { class: 'link-btn', onclick: () => { const s = new Set(ds.map(d => d.value)); H.groups = H.groups.filter(v => !s.has(v)); renderGroups(); later(); } }, 'none')),
+        el('div', { class: 'mpick-grid' }, ...ds.map(d => {
+          const c = el('input', { type: 'checkbox', dataset: { k: d.value } });
+          c.checked = H.groups.includes(d.value);
+          c.addEventListener('change', () => { H.groups = c.checked ? H.groups.concat(d.value) : H.groups.filter(v => v !== d.value); later(); });
+          return el('label', {}, c, d.label, el('span', { class: 'mpick-n' }, fmtInt(d.n)));
+        }))));
+    }
+  };
+  renderGroups();
+  const orderSel = el('select', { 'aria-label': 'Order of the rows' }, el('option', { value: 'kind' }, 'by kind of measure'), el('option', { value: 'effect' }, 'largest difference first'));
+  orderSel.value = H.order;
+  orderSel.addEventListener('change', () => { H.order = orderSel.value; draw(); });
+  const onlyCb = el('input', { type: 'checkbox' }); onlyCb.checked = H.onlyDiff;
+  onlyCb.addEventListener('change', () => { H.onlyDiff = onlyCb.checked; draw(); });
+  const numCb = el('input', { type: 'checkbox' }); numCb.checked = H.numbers;
+  numCb.addEventListener('change', () => { H.numbers = numCb.checked; draw(); });
+  const groupsSum = el('span', { class: 'muted' });
+  const sumText = () => { const ds = defs.filter(d => H.groups.includes(d.value) && d.value !== H.ref); groupsSum.textContent = ds.length ? ' — ' + plural(ds.length, 'group') + ': ' + truncate(ds.map(d => d.label).join(', '), 110) : ' — none ticked'; };
+  sumText();
+  const groupsDetails = el('details', { class: 'hm-details', open: !!H.groupsOpen }, el('summary', {}, 'Groups to compare (columns)', groupsSum), groupsBox);
+  groupsDetails.addEventListener('toggle', () => { H.groupsOpen = groupsDetails.open; });
+  blk.append(el('div', { class: 'cmp-controls' }, el('label', {}, 'Reference group', refSel),
+    el('label', {}, 'Rows', orderSel),
+    el('label', { class: 'inline-check small' }, onlyCb, ' Only measures that differ in at least one group'),
+    el('label', { class: 'inline-check small' }, numCb, ' Show the values in the cells')),
+    groupsDetails,
+    measurePicker(app, measures, later),
+    out);
+
+  const run = async initial => {
+    clearTimeout(timer);
+    if (initial !== true && !blk.isConnected) return;   // the section was closed before the timer fired
+    const active = cmpActiveMeasures(app, measures);
+    out.innerHTML = '';
+    if (!active.length) { H.result = null; out.appendChild(el('p', { class: 'note-box' }, 'No measures are ticked under “Measures to test”.')); return; }
+    const groupsUsed = H.groups.filter(v => v !== H.ref);
+    if (!groupsUsed.length) { H.result = null; out.appendChild(el('p', { class: 'note-box' }, 'Tick at least one group (other than the reference) under “Groups to compare”.')); return; }
+    const big = active.length * groupsUsed.length > 300;
+    if (big) { app.busy('Testing ' + fmtInt(active.length * groupsUsed.length) + ' group–measure pairs…'); await nextFrame(); }
+    try { H.result = heatmapCompute(app, defs, H.ref, groupsUsed, active); }
+    finally { if (big) app.done(); }
+    draw();
+  };
+  const draw = () => {
+    const R = H.result;
+    out.innerHTML = '';
+    if (!R) return;
+    if (!R.cols.length) { out.appendChild(el('p', { class: 'note-box' }, 'No group to show.')); return; }
+    let rows = R.measures.map((m, mi) => ({ m, mi, cells: R.cells[mi] }));
+    if (H.onlyDiff) rows = rows.filter(r => r.cells.some(c => c && c.q < 0.05));
+    if (H.order === 'effect') rows.sort((x, y) => {
+      const best = r => Math.max(0, ...r.cells.map(c => c && c.q < 0.05 ? Math.abs(c.mw.delta) : 0));
+      return best(y) - best(x) || x.mi - y.mi;
+    });
+    const nSig = R.cells.flat().filter(c => c && c.q < 0.05).length;
+    out.appendChild(el('p', { class: 'cmp-verdict' }, plural(R.cols.length, 'group') + ' against ', el('b', {}, R.refName), ', ' + plural(R.measures.length, 'measure') + ': ', el('b', {}, fmtInt(nSig)), ' of ' + fmtInt(R.nTests) + ' tests show a difference (q < 0.05).' + (rows.length < R.measures.length ? ' Showing the ' + plural(rows.length, 'measure') + ' that differ in at least one group.' : '')));
+    if (!rows.length) { out.appendChild(el('p', { class: 'muted' }, 'No measure differs in any group. Untick “Only measures that differ” to see them all.')); return; }
+    const make = o => heatGridSVG(Object.assign({
+      rows: rows.map(r => ({ label: r.m.label, group: r.m.group })), groupRows: H.order === 'kind',
+      cols: R.cols.map(c => ({ label: truncate(c.def.label, 34) + ' (' + fmtInt(c.genes.length) + ')' })),
+      cell: (ri, ci) => { const c = rows[ri].cells[ci]; return c ? { v: c.mw.delta, mark: c.q < 0.05, text: fmtSigned(c.mw.delta, 2) } : null; },
+      numbers: H.numbers, legendTitle: 'Cliff’s delta: group against ' + truncate(R.refName, 40), lowText: 'group lower', highText: 'group higher',
+      markText: 'differs (q < 0.05)', emptyText: 'fewer than 3 genes with a value', title: 'Heat map'
+    }, o));
+    const title = 'Groups against ' + R.refName + ' (Cliff’s delta; dot = q < 0.05)';
+    const fileBase = cmpFileBase(g, 'heatmap_vs_' + R.refName);
+    out.appendChild(el('div', { class: 'actions dl-row' }, downloadGroup('Heat map', [
+      ['SVG', () => downloadChartSVG(make, fileBase, title, 'svg')], ['PNG', () => downloadChartSVG(make, fileBase, title, 'png')], ['Excel', () => heatmapExcel(app, R, rows, fileBase)]])));
+    const svg = make({ mode: app.mode() });
+    wireHeatGrid(svg, (ri, ci) => {
+      const r = rows[ri], c = r.cells[ci], col = R.cols[ci], f = cmpFmt(r.m);
+      if (!c) return '<b>' + esc(r.m.label) + '</b> — ' + esc(col.def.label) + '<br>Not tested: fewer than 3 genes with a value.';
+      return '<b>' + esc(r.m.label) + '</b> — ' + esc(col.def.label) + '<br>Median ' + esc(f(c.mw.medA)) + ' (' + plural(c.mw.n1, 'gene') + ') against ' + esc(f(c.mw.medB)) + ' (' + esc(truncate(R.refName, 30)) + ', ' + plural(c.mw.n2, 'gene') + ')<br>Cliff’s delta ' + fmtSigned(c.mw.delta, 2) + ' (' + cliffSize(c.mw.delta) + ')<br>p = ' + fmtP(c.mw.p) + ', q = ' + fmtP(c.q) + '<br><span class="muted">Click to open this comparison</span>';
+    }, (ri, ci) => {
+      const S = app._cmp || (app._cmp = {});
+      Object.assign(S, { a: R.cols[ci].def.value, b: R.refValue, measure: rows[ri].m.key, view: 'one', backTo: null });
+      openStatsSection(app, 'compare');
+    });
+    out.appendChild(el('div', { class: 'heat-scroll' }, svg));
+    const ov = R.cols.filter(c => c.overlap);
+    out.appendChild(el('p', { class: 'cmp-detail' }, 'Each cell is a Mann–Whitney test of the group against the reference; genes that are in both are left out of the reference for that column' + (R.refValue === 'rest' ? ' (here the reference of each column is every other gene).' : '.') + ' q = Benjamini–Hochberg false discovery rate over all ' + fmtInt(R.nTests) + ' tests in the map. Size of a difference: |δ| below 0.147 negligible, below 0.33 small, below 0.474 medium, otherwise large (Romano et al. 2006).' + (ov.length && R.refValue !== 'rest' ? ' Genes in both a group and the reference: ' + ov.map(c => c.def.label + ' ' + fmtInt(c.overlap)).join(', ') + '.' : '')));
+  };
+  run(true);
+  return blk;
+}
+function heatmapExcel(app, R, rows, fileBase) {
+  const r4 = v => v == null || !Number.isFinite(v) ? '' : +v.toFixed(4);
+  const colNames = R.cols.map(c => c.def.label);
+  const matrix = pick => [['Measure', 'Kind'].concat(colNames)].concat(rows.map(r => [r.m.label, r.m.group].concat(r.cells.map(c => c ? pick(c) : ''))));
+  const long = [['Measure', 'Kind', 'Group', 'Genes in group', 'Genes in reference', 'Median group', 'Median reference', "Cliff's delta", 'Size', 'p', 'q (FDR)', 'Method']];
+  for (const r of rows) r.cells.forEach((c, ci) => { if (c) long.push([r.m.label, r.m.group, colNames[ci], c.mw.n1, c.mw.n2, r4(c.mw.medA), r4(c.mw.medB), r4(c.mw.delta), cliffSize(c.mw.delta), c.mw.p, c.q, c.mw.method]); });
+  const members = [['group', 'locus_tag', 'gene', 'product']];
+  for (const c of R.cols) for (const x of c.genes) members.push([c.def.label, x.f.locus, x.f.gene, x.f.product]);
+  if (R.refGenes) for (const x of R.refGenes) members.push(['Reference: ' + R.refName, x.f.locus, x.f.gene, x.f.product]);
+  const wide = [26, 26].concat(colNames.map(() => 14));
+  downloadXlsx(fileBase + '.xlsx', [
+    { name: "Cliff's delta", rows: matrix(c => r4(c.mw.delta)), widths: wide },
+    { name: 'q (FDR)', rows: matrix(c => c.q), widths: wide },
+    { name: 'Median of group', rows: matrix(c => r4(c.mw.medA)), widths: wide },
+    { name: 'All tests', rows: long, widths: [26, 26, 30, 10, 10, 12, 12, 12, 11, 12, 12, 34], filter: true },
+    { name: 'Groups', rows: members, widths: [30, 16, 10, 50], filter: true },
+    xlsxInfoSheet(app, [['Reference group', R.refValue === 'rest' ? 'All other genes: for each group, every gene outside it' : R.refName + ' (genes that are also in the compared group are left out of the reference for that column)'],
+      ['Genes used', 'Protein-coding genes without a note (no pseudogenes, partial genes or genes with internal stop codons)'],
+      ['Test', 'Mann-Whitney U (Wilcoxon rank-sum), two-sided, for each group and measure (Mann & Whitney 1947, Ann Math Stat 18:50-60)'],
+      ['Effect size', "Cliff's delta of the group against the reference, -1 to +1 (Cliff 1993, Psychol Bull 114:494-509); |delta| < 0.147 negligible, < 0.33 small, < 0.474 medium, otherwise large (Romano et al. 2006)"],
+      ['Multiple testing', 'Benjamini-Hochberg false discovery rate over all ' + R.nTests + ' tests in the heat map (Benjamini & Hochberg 1995, J R Stat Soc B 57:289-300)'],
+      ['CAI reference', caiState(app).label]])]);
 }
 
 /* ===== 16_controls.js ===== */
@@ -11789,7 +12649,10 @@ function helpHTML() {
 <li><b>Statistics → Codon usage</b>: the codon table of all genes, of the genes in the Genes table, of the cell wall genes, of a highlight set or of the selected gene (choose under <b>Genes</b>). Download it as CSV, Excel, SVG or PNG.</li>
 <li><b>Statistics → Codon patterns</b>: type patterns such as <code>ANN, GCN, NNG</code> (as in CodoNex). Each gene gets the number and share of its codons that match, and the 12 codon types by position (ANN %, CNN % … NNT %) are available too: as columns in Genes (Columns → Your codon patterns / Codon types by position), as ranges in Filters, as measures in group tests, and in each gene's Codon usage section.</li>
 <li><b>Statistics → Codon adaptation index</b>: choose the reference genes (ribosomal-protein genes by default, all genes, one of your highlight sets, or the genes in the Genes table). The histogram shows the CAI of every gene; click a bar to list those genes. The codon-weight table shows which codons the reference genes prefer.</li>
-<li><b>Statistics → Compare two groups of genes</b>: e.g. cell wall genes against all other genes, plasmid against chromosome genes, or leading against lagging strand. <b>Compare</b> tests one measure and draws a box plot; <b>Test every measure</b> tests CAI, ENC, GC values, length, every amino acid and every codon (RSCU) at once.</li>
+<li><b>Statistics</b> is split into sections (Overview, Codon usage, Codon patterns, CAI, Compare groups, Heat map); the tabs stay at the top while you scroll, and the last section you opened is remembered.</li>
+<li><b>Statistics → Compare groups</b>: e.g. cell wall genes against all other genes, plasmid against chromosome genes, or leading against lagging strand. <b>Compare</b> tests one measure, draws a box plot with the single genes as dots and lists the genes one by one. <b>Test every measure</b> tests the kinds of measures ticked under <b>Measures to test</b> (Gene, Amino acids, Codon types by position, Your codon patterns, Codons (RSCU); “Choose single measures…” picks single ones). The <b>Effect</b> column says how big each difference is (Large, Medium, Small, Negligible), and rows that differ are shaded green, yellow, red or grey. Tick rows and press <b>Show charts</b> to see their box plots on one page; download them as one figure or as a zip of separate files (SVG or PNG).</li>
+<li><b>Gene by gene</b>: each gene gets a score against the other group, from −1 (lower than all of its genes) to +1 (higher than all of them). The average score of group A is exactly Cliff's delta, so the genes at the top of the list drive the difference. For several ticked measures the scores are shown as a heat map of genes × measures.</li>
+<li><b>Statistics → Heat map</b>: several groups at once (columns), each against one reference group, for every ticked measure (rows). Red = the group is higher, blue = lower; a dot = q below 0.05. Click a cell to open that comparison; download SVG, PNG or Excel.</li>
 <li><b>Map track</b>: left panel → Analyses → <b>Codon usage per gene</b> → Show on map (CAI, ENC, GC3s, GC3 or gene GC). "Colour genes by → Values" then paints the gene arrows as well.</li>
 <li>Charts and diagrams can be saved as <b>SVG</b> (vector, editable) or <b>PNG</b> (picture, 3× size); tables as <b>CSV</b> or <b>Excel</b> (.xlsx, written by the page itself, with an Info sheet that records the settings).</li>
 </ul>
@@ -11820,7 +12683,7 @@ function helpHTML() {
 <li><b>Structures</b> are AlphaFold DB predictions drawn as a Cα trace coloured by pLDDT confidence.</li>
 <li><b>Codon usage per gene</b> counts the codons of every protein-coding gene (from its codon_start, with the genome's genetic code). <b>GC1, GC2, GC3</b> = GC at each codon position; <b>GC3s</b> = GC at third positions of codons that have synonymous alternatives (not Met, Trp or stop codons). <b>ENC</b>, the effective number of codons (Wright 1990), runs from 20 (one codon per amino acid) to 61 (all codons used equally); if isoleucine is missing, its value is the mean of the 2- and 4-codon families, and values above 61 are set to 61. Pseudogenes, partial genes and genes with internal stop codons keep their numbers but are left out of reference sets, histograms and group tests.</li>
 <li><b>CAI</b> (Sharp &amp; Li 1987): the codon counts of the reference genes are pooled; each codon's weight w = its count ÷ the count of the most-used codon of the same amino acid (a codon never seen in the reference counts as 0.5); a gene's CAI is the geometric mean of w over its codons, leaving out Met, Trp and stop codons. Ribosomal-protein genes are recognised from gene names (rpl, rps, rpm) and products such as "50S ribosomal protein L2".</li>
-<li><b>Group tests</b>: Mann–Whitney U test, two-sided (exact for groups of up to 25 genes without ties; otherwise the normal approximation with corrections for ties and continuity). Effect size = Cliff's delta (−1 to +1), called negligible below 0.147, small below 0.33, medium below 0.474, otherwise large (Romano et al. 2006). "Test every measure" adds Benjamini–Hochberg q-values. With thousands of genes even tiny differences give small p-values, so read the effect size too.</li>
+<li><b>Group tests</b>: Mann–Whitney U test, two-sided (exact for groups of up to 25 genes without ties; otherwise the normal approximation with corrections for ties and continuity). Effect size = Cliff's delta (−1 to +1), called negligible below 0.147, small below 0.33, medium below 0.474, otherwise large (Romano et al. 2006). "Test every measure" and the heat map add Benjamini–Hochberg q-values, corrected for the number of tests actually run (so testing fewer measures gives less strict q-values). With thousands of genes even tiny differences give small p-values, so read the effect size too.</li>
 <li><b>Conserved motifs</b>: the penicillin-binding motifs SxxK … SxN … K(T/S)G in this order (SxN 20–300 aa after SxxK, K(T/S)G 40–300 aa after SxN) and motif 1 of the GT51 glycosyltransferase module, EDxxFxx(H/N)x(G/A). Without Pfam data they refine the cell wall rules: a protein named only "penicillin-binding protein" with both motifs becomes a class A PBP, and a "transglycosylase domain-containing protein" without the GT51 motif only a possible MtgA.</li>
 <li><b>Codon optimizer</b>: "most-used codon" gives each amino acid the codon with w = 1 (like the "one amino acid – one codon" method of OPTIMIZER, Puigbò et al. 2007); "mix as in the reference genes" spreads the allowed codons in their reference proportions, evenly along the gene. Codons below the chosen w are avoided. Unwanted sites (both strands) and runs of one base are removed by swapping synonymous codons, and the result is translated back to check that the protein is unchanged. These features follow CodoNex.</li>
 </ul>
@@ -12260,7 +13123,7 @@ class App {
     this.genome = genome;
     this.sel = null; this.region = null; this.motif = null; this.islandList = null; this.seqSearch = null;
     this.compares = []; this.sets = [];
-    this.codonRef = { mode: 'ribo' }; this._cai = null; this._cmp = null;
+    this.codonRef = { mode: 'ribo' }; this._cai = null; this._cmp = null; this._hm = null;
     this.pgHighlight.on = false;
     this.tracks = defaultTracks();
     this.invalidateColors();
@@ -12640,7 +13503,7 @@ class App {
       classifyAllFunctions(g);
       predictOperons(g, this.settings.operonGap);
       // the genes changed: codon usage per gene and CAI must be worked out again
-      delete g._codon; this._cai = null; this._cmp = null;
+      delete g._codon; this._cai = null; this._cmp = null; this._hm = null;
       refreshCodonTracks(this);
       this.invalidateColors();
       this.done();
