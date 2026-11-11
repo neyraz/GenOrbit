@@ -781,6 +781,23 @@ input[type=radio], input[type=checkbox] { accent-color: var(--violet); margin: 0
 .hom-ctxcard details ul { margin: 6px 0; padding-left: 18px; max-height: 200px; overflow: auto; }
 .hom-famtable tr { cursor: pointer; }
 .hom-famtable tr.hom-hl td { background: var(--violet-2); }
+.hom-files { display: inline-flex; gap: 6px; margin-left: auto; }
+.hom-openfile { margin-top: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.hom-nbann { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0 0 10px; padding: 8px 12px; border: 1px dashed var(--line-2); border-radius: 10px; }
+.hom-nbctl { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 16px; margin: 6px 0 10px; }
+.hom-nbctl .inline-check { padding-bottom: 6px; }
+.hom-nbctl .inline-check[hidden] { display: none; }
+.hom-pair { display: inline-flex; align-items: center; gap: 6px; }
+.hom-pair select[hidden] { display: none; }
+.hom-thr input[type=range] { width: 130px; accent-color: var(--violet); }
+.hom-thr output { min-width: 3.2em; font-variant-numeric: tabular-nums; font-size: 12px; color: var(--ink-2); }
+.nb-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 0 0 8px; }
+.nb-leg { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--panel); color: var(--ink); font: inherit; font-size: 12px; cursor: pointer; }
+.nb-leg:hover { border-color: var(--violet-3); }
+.nb-leg.on { border-color: var(--violet); background: var(--violet-2); }
+.nb-leg:focus-visible { outline: 2px solid var(--violet); outline-offset: 1px; }
+.nb-leg-s { font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 11.5px; }
+.nb-leg-note { flex-basis: 100%; }
 .hom-dna h3.sub-h, .hom-dna > .sub-h { margin-top: 18px; }
 .hom-famtable td.num { white-space: nowrap; }
 </style>
@@ -2704,6 +2721,36 @@ const HOMNET = {
     } catch (e) { /* keep the name as it is */ }
     this._phy.set(name, out);
     return out;
+  },
+  /**
+   * UniParc entries of protein sequences, found by their CRC64 checksums (see crc64): the Pfam domains
+   * of each sequence and the UniProtKB entries that have it. In UniParc's list the current entries are
+   * written without a version (P02918); deleted ones carry one (A0A5Q3TEI7.1) and are left out here.
+   */
+  async uniparcByChecksum(sums) {
+    const q = sums.map(s => 'checksum:' + s).join(' OR ');
+    const d = await httpGet(UNIPROT.REST + 'uniparc/search?' + qs({ query: q, format: 'json', size: 500 }), { type: 'json', timeout: 120000 });
+    return (d.results || []).map(r => {
+      const pf = new Map();
+      for (const f of r.sequenceFeatures || []) if (f.database === 'Pfam' && f.databaseId && !pf.has(f.databaseId)) pf.set(f.databaseId, (f.interproGroup && f.interproGroup.name) || '');
+      return { upi: r.uniParcId, crc: String((r.sequence && r.sequence.crc64) || '').toUpperCase(), seq: (r.sequence && r.sequence.value) || '',
+        accs: (r.uniProtKBAccessions || []).filter(x => !/\./.test(x)), pf: [...pf.entries()] };
+    });
+  },
+  /** eggNOG groups, protein family (from "belongs to the … family"), biological-process keywords and name of UniProtKB entries. */
+  async uniprotAnnotations(accs) {
+    const d = await httpGet(UNIPROT.REST + 'uniprotkb/accessions?' + qs({ accessions: accs.join(','), fields: 'accession,reviewed,protein_name,xref_eggnog,protein_families,keyword', format: 'json', size: 500 }), { type: 'json', timeout: 120000 });
+    const m = new Map();
+    for (const e of d.results || []) {
+      if (!e.primaryAccession || e.entryType === 'Inactive') continue;
+      const og = (e.uniProtKBCrossReferences || []).filter(x => x.database === 'eggNOG').map(x => x.id);
+      const sim = (e.comments || []).filter(c => c.commentType === 'SIMILARITY').map(c => (c.texts || []).map(t => t.value).join(' ')).join(' ');
+      const fmm = /belongs to the (.+? family)/i.exec(sim);
+      const kw = (e.keywords || []).filter(k => k.category === 'Biological process').map(k => k.name);
+      const pd = e.proteinDescription || {}, nm = pd.recommendedName || (pd.submissionNames || [])[0] || {};
+      m.set(e.primaryAccession, { acc: e.primaryAccession, rev: /Swiss/i.test(e.entryType || ''), og, fm: fmm ? fmm[1].charAt(0).toUpperCase() + fmm[1].slice(1) : '', kw, pn: (nm.fullName && nm.fullName.value) || '' });
+    }
+    return m;
   },
   /** Find a taxon by name or number (for "search only in …"). */
   async taxonSearch(text) {
@@ -5833,6 +5880,36 @@ function groupFamilies(n, links) {
   const fam = new Int32Array(n);
   for (let i = 0; i < n; i++) fam[i] = num.get(find(i));
   return fam;
+}
+
+/* ---------------- sequence checksum (finds a protein in UniParc) ---------------- */
+/**
+ * CRC64 of a protein sequence as UniProt computes it (the SWISS-PROT/ISO polynomial,
+ * reflected, upper-case hex of 16 digits). UniParc can be searched with it (checksum:…).
+ * Done with two 32-bit halves, so no BigInt is needed.
+ */
+const CRC64_TABLE = (() => {
+  const hi = new Uint32Array(256), lo = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let h = 0, l = i;
+    for (let k = 0; k < 8; k++) {
+      const odd = l & 1;
+      l = ((l >>> 1) | ((h & 1) << 31)) >>> 0; h = h >>> 1;
+      if (odd) h = (h ^ 0xD8000000) >>> 0;
+    }
+    hi[i] = h; lo[i] = l;
+  }
+  return { hi, lo };
+})();
+function crc64(seq) {
+  let h = 0, l = 0;
+  const s = String(seq);
+  for (let i = 0; i < s.length; i++) {
+    const idx = (l ^ s.charCodeAt(i)) & 0xFF;
+    l = ((l >>> 8) | ((h & 0xFF) << 24)) >>> 0; h = h >>> 8;
+    h = (h ^ CRC64_TABLE.hi[idx]) >>> 0; l = (l ^ CRC64_TABLE.lo[idx]) >>> 0;
+  }
+  return (h.toString(16).padStart(8, '0') + l.toString(16).padStart(8, '0')).toUpperCase();
 }
 
 /* ===== 06_pg.js ===== */
@@ -14111,7 +14188,12 @@ function renderHomTab(app) {
     el('span', {}, (a.query.product || 'protein') + ' · ' + fmtInt(a.query.len) + ' aa · ' + a.query.org),
     qf ? el('button', { class: 'link-btn', onclick: () => app.select(qf, { from: 'table', zoom: true }) }, 'show the gene') : el('span', { class: 'muted small' }, ' (from another genome)'),
     pickSel ? el('label', { class: 'hom-pick-l' }, 'Analysis ', pickSel) : '',
-    el('button', { class: 'link-btn', onclick: () => homDeleteAnalysis(app, a) }, 'delete this analysis')));
+    el('button', { class: 'link-btn', onclick: () => homDeleteAnalysis(app, a) }, 'delete this analysis'),
+    el('span', { class: 'hom-files' },
+      el('button', { class: 'btn small', title: 'Save homologue analyses in a file of their own (they are also part of the session file)', onclick: e => openMenu(e.currentTarget, [
+        { label: 'This analysis', sub: homQueryName(a) + ', with its hits, alignment, tree and neighbourhoods', action: () => homSaveFile(app, 'one') },
+        { label: H.list.length > 1 ? 'All ' + H.list.length + ' analyses' : 'All analyses', sub: 'every gene in the menu', disabled: H.list.length < 2, action: () => homSaveFile(app, 'all') }]) }, 'Save analyses…'),
+      el('button', { class: 'btn small', title: 'Open a homologue file (or the homologue analyses of a session file) and add them to these', onclick: () => homOpenFilePicker(app) }, 'Open…'))));
   const taskBox = el('div', { id: 'homTask', class: 'hom-task', hidden: true, role: 'status', 'aria-live': 'polite' });
   host.appendChild(taskBox);
   const subs = HOM_SUBTABS;
@@ -14181,7 +14263,9 @@ function homEmptyState(app) {
   box.append(el('div', { class: 'hom-start' },
     sel ? el('p', {}, el('button', { class: 'btn primary', onclick: () => openHomologues(app, sel) }, 'Start with ' + (sel.gene || sel.locus)), el('span', { class: 'muted' }, ' — the gene selected now (' + truncate(sel.product || '', 50) + ')')) : '',
     el('label', { class: 'gf-field' }, 'Or pick a protein-coding gene', inp), out),
-    el('p', { class: 'muted small' }, 'You can also open this from a gene’s panel: “BLAST / similar” → “Homologues, alignment and tree”.'));
+    el('p', { class: 'muted small' }, 'You can also open this from a gene’s panel: “BLAST / similar” → “Homologues, alignment and tree”.'),
+    el('p', { class: 'hom-openfile' }, el('button', { class: 'btn', onclick: () => homOpenFilePicker(app) }, 'Open saved analyses…'),
+      el('span', { class: 'muted small' }, ' a homologue file (.genorbit-hom.json.gz) saved here earlier, or the homologue analyses inside a session file')));
   setTimeout(() => inp.focus(), 50);
   return box;
 }
@@ -15969,7 +16053,7 @@ function homCtxFromRecord(rec, f, offset, W, U, info) {
   const keep = g => !g.hidden && (g.type === 'CDS' || /RNA$/.test(g.type) || g.type === 'pseudogene');
   const genes = featuresInRange(rec, Math.max(1, f.start - W), Math.min(rec.length, f.end + W), keep).map(g => ({
     s: g.start + offset, e: g.end + offset, str: g.strand, t: g.type, n: g.gene || '', l: g.locus || '', p: truncate(g.product || '', 100),
-    aa: g.type === 'CDS' && !g.pseudo ? featureProtein(rec, g) : '', self: g === f ? 1 : 0 }));
+    aa: g.type === 'CDS' && !g.pseudo ? featureProtein(rec, g) : '', pid: qv(g, 'protein_id'), self: g === f ? 1 : 0 }));
   if (!genes.some(g => g.self)) genes.push({ s: f.start + offset, e: f.end + offset, str: f.strand, t: 'CDS', n: f.gene || '', l: f.locus || '', p: truncate(f.product || '', 100), aa: '', self: 1 });
   genes.sort((x, y) => x.s - y.s);
   return Object.assign({ st: 'ok', cds: featureDNA(rec, f), up: upstreamDNA(rec, f, U), upLen: U, win: W, start: f.start + offset, end: f.end + offset, strand: f.strand, genes, when: new Date().toISOString() }, info);
@@ -16397,263 +16481,6 @@ function homDnaLogoSVG(rows, U, START, opt = {}) {
   return svg;
 }
 
-/* ======================================================================
-   Neighbourhood: the genes around each homologue, grouped into families
-   ====================================================================== */
-function homNbItems(a) { return homCtxItems(a).filter(it => a.ctx && a.ctx[it.id] && a.ctx[it.id].st === 'ok' && a.ctx[it.id].genes && a.ctx[it.id].genes.length); }
-function homNbKey(a, items) { return items.map(it => it.id + ':' + a.ctx[it.id].genes.length + ':' + a.ctx[it.id].win).join('|'); }
-/** Group the proteins of all neighbourhoods into families (similar proteins of similar length), in Web Workers. */
-async function homNbFamilies(app, a) {
-  const items = homNbItems(a);
-  if (items.length < 2) return;
-  await homTask(app, a, 'Gene families', async task => {
-    const prots = [], owner = [];
-    items.forEach((it, k) => a.ctx[it.id].genes.forEach((g, j) => { if (g.aa && g.aa.length >= 30) { prots.push(g.aa); owner.push([k, j]); } }));
-    task.set('comparing ' + plural(prots.length, 'neighbouring protein') + ' with each other', 0);
-    const res = await parallelSearch(prots, prots, { maxE: 1e-5, maxCand: 40, topK: 40, skipSelf: true }, (d, n) => { task.set('comparing neighbouring proteins (' + fmtInt(d) + ' of ' + fmtInt(n) + ')', d / n); });
-    const links = [];
-    res.forEach((list, i) => { for (const r of list || []) { const la = prots[i].length, lb = prots[r.t].length; if (Math.min(la, lb) / Math.max(la, lb) >= 0.5) links.push([i, r.t]); } });
-    const selfIdx = owner.map(([k, j], i) => a.ctx[items[k].id].genes[j].self ? i : -1).filter(i => i >= 0);
-    for (let i = 1; i < selfIdx.length; i++) links.push([selfIdx[0], selfIdx[i]]);
-    const fam = groupFamilies(prots.length, links);
-    // per gene: family number (−1 = no protein / too short)
-    const per = items.map(it => new Array(a.ctx[it.id].genes.length).fill(-1));
-    owner.forEach(([k, j], i) => { per[k][j] = fam[i]; });
-    // the homologue's own family is number 0 when it has a protein; otherwise give the self genes a family of their own
-    let selfFam = selfIdx.length ? fam[selfIdx[0]] : -1;
-    const fmax = Math.max(-1, ...fam);
-    if (selfFam < 0) { selfFam = fmax + 1; items.forEach((it, k) => a.ctx[it.id].genes.forEach((g, j) => { if (g.self) per[k][j] = selfFam; })); }
-    a.nbFam = { key: homNbKey(a, items), ids: items.map(it => it.id), per, selfFam, when: new Date().toISOString() };
-  });
-}
-/** Families with their numbers, names, where they sit relative to the homologue, and where they are found. */
-function homNbSummary(a, items) {
-  const NF = a.nbFam, fams = new Map();
-  items.forEach((it, k) => {
-    const c = a.ctx[it.id], genes = c.genes, per = NF.per[k];
-    const si = genes.findIndex(g => g.self), self = genes[si], dir = self ? self.str : 1;
-    genes.forEach((g, j) => {
-      const f = per[j];
-      if (f < 0) return;
-      let F = fams.get(f);
-      if (!F) { F = { f, items: new Set(), genes: [], rel: [], same: 0, names: new Map(), prods: new Map(), phyla: new Map() }; fams.set(f, F); }
-      const rel = (j - si) * (dir > 0 ? 1 : -1);
-      F.genes.push({ k, j, g });
-      if (!F.items.has(k)) {
-        F.items.add(k);
-        const ph = it.id === 'query' ? ((a.query.lineage || {}).phylum || 'Unknown') : (homRankOf(it.h || {}, 'phylum') || 'Unknown');
-        F.phyla.set(ph, (F.phyla.get(ph) || 0) + 1);
-      }
-      F.rel.push(rel); if (g.str === dir) F.same++;
-      if (g.n) F.names.set(g.n, (F.names.get(g.n) || 0) + 1);
-      if (g.p) F.prods.set(g.p, (F.prods.get(g.p) || 0) + 1);
-    });
-  });
-  const top = m => [...m.entries()].sort((x, y) => y[1] - x[1])[0];
-  const list = [...fams.values()].map(F => {
-    F.rel.sort((x, y) => x - y);
-    const nm = top(F.names), pr = [...F.prods.entries()].filter(e => !/hypothetical/i.test(e[0])).sort((x, y) => y[1] - x[1])[0] || top(F.prods);
-    return Object.assign(F, { n: F.items.size, name: nm ? nm[0] : '', product: pr ? pr[0] : '', relMed: F.rel[F.rel.length >> 1], sameShare: F.same / F.genes.length, isSelf: F.f === NF.selfFam });
-  }).sort((x, y) => (y.isSelf - x.isSelf) || (y.n - x.n) || (Math.abs(x.relMed) - Math.abs(y.relMed)));
-  // display numbers (1 = the homologues) and colours: the homologue in the accent colour, the 7 most widespread shared families in the categorical colours
-  const shared = list.filter(F => !F.isSelf && F.n >= 2);
-  list.forEach((F, i) => { F.no = i + 1; });
-  return { list, byF: new Map(list.map(F => [F.f, F])), shared };
-}
-function homNbColors(sum, mode) {
-  const cat = CAT[mode] || CAT.light, slots = [0, 1, 2, 3, 4, 5, 7];
-  const col = new Map();
-  for (const F of sum.list) if (F.isSelf) col.set(F.f, mode === 'dark' ? '#9D86F5' : '#5A3DB8');
-  sum.shared.slice(0, slots.length).forEach((F, i) => col.set(F.f, cat[slots[i]]));
-  return col;
-}
-function homNbView(app, a, host) {
-  const blk = el('div', { class: 'block hom-nb' });
-  host.appendChild(blk);
-  blk.appendChild(homCtxCard(app, a));
-  const items = homNbItems(a);
-  if (items.length < 2) { blk.appendChild(el('p', { class: 'note-box' }, 'This needs the genes around at least two homologues. Press “Get DNA and neighbouring genes” above.')); return; }
-  const key = homNbKey(a, items);
-  if (!a.nbFam || a.nbFam.key !== key) {
-    // start once by itself; after a failure (or a stop) offer a button instead of trying again and again
-    if (a._nbTried !== key && !a.task) { a._nbTried = key; setTimeout(() => homNbFamilies(app, a), 0); blk.appendChild(el('p', { class: 'muted' }, 'Grouping the neighbouring genes into families…')); }
-    else if (a.task) blk.appendChild(el('p', { class: 'muted' }, 'Waiting for “' + a.task.label + '” to finish…'));
-    else blk.appendChild(el('p', {}, el('button', { class: 'btn primary', onclick: () => homNbFamilies(app, a) }, 'Group the neighbouring genes into families')));
-    return;
-  }
-  const sum = homNbSummary(a, items), mode = app.mode();
-  const N = items.length;
-  const conserved = sum.shared.filter(F => F.n / N >= 0.5);
-  blk.appendChild(el('p', { class: 'block-sub' }, 'The genes within ± ' + Math.round(Math.min(...items.map(it => a.ctx[it.id].win)) / 1000) + ' kb of ' + plural(N, 'homologue') + ', each turned so that the homologue points right. Genes whose proteins are similar (E ≤ 10⁻⁵) and of similar length (the shorter at least half the longer) form a family and share a colour. ' +
-    (conserved.length ? fmtInt(conserved.length) + ' famil' + (conserved.length === 1 ? 'y is' : 'ies are') + ' next to the homologue in at least half of the genomes: ' + conserved.slice(0, 6).map(F => F.name || truncate(F.product, 30) || 'family ' + F.no).join(', ') + (conserved.length > 6 ? ', …' : '') + '.' : 'No family of neighbouring genes is shared by half of the genomes.')));
-  // controls
-  const V = a.nbView || (a.nbView = { order: a.tree ? 'tree' : 'aligned', labels: true, hl: null });
-  const ordSel = el('select', { 'aria-label': 'Order of the rows' }, ...[['aligned', 'as in the alignment'], ['tree', 'as in the tree'], ['taxonomy', 'by taxonomy']].map(([v, l]) => el('option', { value: v, selected: v === V.order, disabled: v === 'tree' && !a.tree }, l)));
-  ordSel.addEventListener('change', () => { V.order = ordSel.value; draw(); });
-  const lblChk = el('input', { type: 'checkbox' }); lblChk.checked = V.labels !== false;
-  lblChk.addEventListener('change', () => { V.labels = lblChk.checked; draw(); });
-  const figBox = el('div', { class: 'hom-nbbox' });
-  const detail = el('div', { class: 'hom-detail' });
-  blk.append(el('div', { class: 'hom-row' }, el('label', { class: 'gf-field' }, 'Rows', ordSel), el('label', { class: 'inline-check' }, lblChk, ' gene names'),
-    el('span', { class: 'actions' }, downloadGroup('Figure', [['SVG', () => homNbFigure(app, a, items, sum, 'svg')], ['PNG', () => homNbFigure(app, a, items, sum, 'png')]]),
-      downloadGroup('Families and genes', [['Excel', () => homNbExcel(app, a, items, sum)]]))), figBox, detail);
-  const order = () => {
-    const idx = items.map((it, k) => k);
-    if (V.order === 'tree') { const t = homTreeOrder(a); if (t) { const pos = new Map(t.map((r, i) => [r, i])); return idx.sort((x, y) => (pos.get(items[x].row) ?? 1e9) - (pos.get(items[y].row) ?? 1e9)); } }
-    if (V.order === 'taxonomy') { const key = k => { const it = items[k]; const L = it.id === 'query' ? (a.query.lineage || {}) : ((it.h && it.h.lineage) || {}); return (it.id === 'query' ? '0' : '1') + [L.phylum, L.class, L.order, L.family, L.genus].map(x => x || '~').join('|'); }; return idx.sort((x, y) => key(x).localeCompare(key(y))); }
-    return idx;
-  };
-  function draw() {
-    const cols = homNbColors(sum, mode);
-    const svg = homNbSVG(app, a, items, sum, cols, order(), { mode, view: V, interactive: true, width: figBox.clientWidth - 14 });
-    figBox.innerHTML = ''; figBox.appendChild(svg);
-    const geneOf = e => { const g = e.target.closest && e.target.closest('.nb-g'); return g ? { k: +g.dataset.k, j: +g.dataset.j } : null; };
-    svg.addEventListener('pointermove', e => {
-      const p = geneOf(e);
-      if (!p) { Tooltip.hide(); return; }
-      const c = a.ctx[items[p.k].id], g = c.genes[p.j], f = a.nbFam.per[p.k][p.j], F = sum.byF.get(f);
-      Tooltip.show('<b>' + esc(g.n || g.l || g.t) + '</b>' + (g.self ? ' (the homologue)' : '') + '<br>' + esc(g.p || '') + (g.aa ? '<br>' + g.aa.length + ' aa' : '') + (F ? '<br>Family ' + F.no + ': near ' + F.n + ' of ' + N + ' homologues' : g.aa ? '' : '<br>(no protein)') + '<br>' + esc((c.nuc || '') + ':' + g.s + '..' + g.e + (g.str < 0 ? ' (−)' : ' (+)')), e.clientX, e.clientY);
-    });
-    svg.addEventListener('pointerleave', () => Tooltip.hide());
-    svg.addEventListener('click', e => {
-      const p = geneOf(e);
-      if (!p) return;
-      const f = a.nbFam.per[p.k][p.j];
-      V.hl = V.hl === f ? null : f;
-      draw(); drawTable();
-      homNbGeneDetail(app, a, items[p.k], p.j, sum, detail);
-    });
-  }
-  // families table
-  const tblBox = el('div', { class: 'table-scroll tall' });
-  const drawTable = () => {
-    const cols = homNbColors(sum, mode);
-    const t = el('table', { class: 'simple-table hom-famtable' }, el('tr', {}, el('th', {}, ''), el('th', { class: 'num' }, 'Family'), el('th', {}, 'Gene'), el('th', {}, 'Protein'), el('th', { class: 'num' }, 'Near'), el('th', { class: 'num' }, 'Usual place'), el('th', { class: 'num' }, 'Same direction'), el('th', {}, 'Phyla'), el('th', {}, '')));
-    for (const F of sum.list.filter(F => F.isSelf || F.n >= 2).slice(0, 60)) {
-      const tr = el('tr', { class: V.hl === F.f ? 'hom-hl' : '', onclick: () => { V.hl = V.hl === F.f ? null : F.f; draw(); drawTable(); } },
-        el('td', {}, el('span', { class: 'swatch', style: { background: cols.get(F.f) || 'transparent', border: cols.get(F.f) ? '' : '1px solid #bbb' } })),
-        el('td', { class: 'num' }, String(F.no)), el('td', {}, F.isSelf ? el('b', {}, homQueryName(a) + ' (the homologues)') : F.name || '—'), el('td', { class: 'small' }, truncate(F.product, 60)),
-        el('td', { class: 'num' }, F.n + ' of ' + N + ' (' + Math.round(F.n / N * 100) + '%)'), el('td', { class: 'num' }, F.isSelf ? '0' : (F.relMed > 0 ? '+' : '') + F.relMed),
-        el('td', { class: 'num' }, Math.round(F.sameShare * 100) + '%'), el('td', { class: 'small' }, truncate([...F.phyla.entries()].sort((x, y) => y[1] - x[1]).map(([p, n]) => p + ' ' + n).join(', '), 70)),
-        el('td', {}, el('button', { class: 'link-btn', onclick: e => { e.stopPropagation(); homNbFamilyFasta(a, items, F); } }, 'FASTA')));
-      t.appendChild(tr);
-    }
-    tblBox.innerHTML = ''; tblBox.appendChild(t);
-  };
-  blk.append(el('h4', { class: 'sub-h' }, 'Families of neighbouring genes'), el('p', { class: 'muted small' }, '“Usual place”: the middle position relative to the homologue (+1 = the next gene after it, −1 = the gene before it). Click a family (or a gene in the picture) to highlight it. Families found next to only one homologue are not listed.'), tblBox);
-  // presence across phyla
-  const matBox = el('div', { class: 'hom-conschart' });
-  blk.append(el('div', { class: 'chart-head' }, el('h4', { class: 'sub-h' }, 'Which neighbours, in which phyla'),
-    figureLinks(fmt => downloadChartSVG(o => homNbMatrixSVG(a, items, sum, o), safeFileName(homQueryName(a) + '_neighbour_families_by_phylum'), 'Neighbouring gene families of ' + homQueryName(a) + ' by phylum', fmt), 'the chart')), matBox);
-  matBox.appendChild(homNbMatrixSVG(a, items, sum, { mode }));
-  draw(); drawTable();
-}
-/** Rows of gene arrows (SVG). */
-function homNbSVG(app, a, items, sum, cols, order, opt = {}) {
-  const { ink, ink3, line } = chartInk(opt);
-  const V = opt.view || {};
-  const win = Math.min(...items.map(it => a.ctx[it.id].win)) + 2000;
-  const W = Math.round(clamp(opt.width || 1120, 620, 1600)), NW = Math.round(clamp(W * 0.25, 170, 250)), M = { t: 10, b: 40, r: 12 };
-  const PW = W - NW - M.r, rowH = V.labels !== false ? 34 : 24, H = M.t + order.length * rowH + M.b;
-  const sx = PW / (2 * win), X0 = NW + PW / 2;
-  const svg = svgNode('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg nb-svg', role: 'img', 'aria-label': 'Genes around each homologue', width: W, height: H });
-  const lab = homRowLabels(app, a, items.map(it => it.id), 'phylum', opt.theme === 'light' ? 'light' : null);
-  const accent = opt.theme === 'light' ? '#5A3DB8' : cssVar('--violet', '#5A3DB8');
-  const hl = V.hl;
-  order.forEach((k, ri) => {
-    const it = items[k], c = a.ctx[it.id], per = a.nbFam.per[k];
-    const y = M.t + ri * rowH + (V.labels !== false ? 20 : 12);
-    const self = c.genes.find(g => g.self) || { s: c.start, e: c.end, str: c.strand };
-    const dir = self.str || 1, centre = (self.s + self.e) / 2;
-    const L = lab[k];
-    if (L.color) svgNode('rect', { x: 4, y: y - 5, width: 8, height: 10, rx: 1.5, fill: L.color }, svg);
-    svgNode('text', { x: 16, y: y + 4, 'font-size': 11, fill: it.id === 'query' ? accent : ink, 'font-weight': it.id === 'query' ? 700 : 400 }, svg, truncate(L.short, Math.floor((NW - 22) / 6.2)));
-    svgNode('line', { x1: NW, x2: NW + PW, y1: y, y2: y, stroke: line, 'stroke-width': 1 }, svg);
-    c.genes.forEach((g, j) => {
-      let x1 = dir > 0 ? g.s - centre : centre - g.e, x2 = dir > 0 ? g.e - centre : centre - g.s;
-      if (x2 < -win || x1 > win) return;
-      const cut1 = x1 < -win, cut2 = x2 > win;
-      x1 = Math.max(-win, x1); x2 = Math.min(win, x2);
-      const px1 = X0 + x1 * sx, px2 = X0 + x2 * sx, right = g.str * dir > 0;
-      const f = per[j], dark = opt.theme !== 'light' && opt.mode === 'dark', col = cols.get(f) || (g.aa ? (dark ? '#4A4660' : '#D8D5E3') : (dark ? '#2B2838' : '#F1F0F5'));
-      const hb = 6, head = Math.min(8, (px2 - px1) * 0.5);
-      const pts = right ? [[px1, y - hb], [px2 - head, y - hb], [px2, y], [px2 - head, y + hb], [px1, y + hb]] : [[px2, y - hb], [px1 + head, y - hb], [px1, y], [px1 + head, y + hb], [px2, y + hb]];
-      if ((right && cut2) || (!right && cut1)) { pts.length = 0; pts.push([px1, y - hb], [px2, y - hb], [px2, y + hb], [px1, y + hb]); }
-      const dim = hl != null && f !== hl;
-      const gEl = svgNode('g', { class: opt.interactive ? 'nb-g' : '', 'data-k': k, 'data-j': j, opacity: dim ? 0.3 : 1 }, svg);
-      svgNode('polygon', { points: pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '), fill: col, stroke: g.self ? ink : hl === f && hl != null ? ink : rgba('#1E1B2E', 0.35), 'stroke-width': g.self || (hl === f && hl != null) ? 1.6 : 0.7 }, gEl);
-      if (V.labels !== false) {
-        const nm = g.self ? (g.n || (it.id === 'query' ? homQueryName(a) : '')) : g.n;
-        if (nm && (px2 - px1) > nm.length * 5.6 + 2) svgNode('text', { x: (px1 + px2) / 2, y: y - 9, 'text-anchor': 'middle', 'font-size': 9.5, 'font-style': 'italic', fill: ink3 }, gEl, nm);
-      }
-    });
-  });
-  // scale bar: 1 kb
-  const yb = M.t + order.length * rowH + 16;
-  svgNode('path', { d: `M${NW} ${yb}H${NW + 1000 * sx}M${NW} ${yb - 4}V${yb + 4}M${NW + 1000 * sx} ${yb - 4}V${yb + 4}`, stroke: ink, 'stroke-width': 1.2, fill: 'none' }, svg);
-  svgNode('text', { x: NW + 1000 * sx + 6, y: yb + 4, 'font-size': 10.5, fill: ink3 }, svg, '1 kb');
-  svgNode('text', { x: NW + PW, y: yb + 4, 'text-anchor': 'end', 'font-size': 10.5, fill: ink3 }, svg, 'Same colour = same family; grey = next to one homologue only; outlined = the homologue');
-  return svg;
-}
-function homNbGeneDetail(app, a, it, j, sum, box) {
-  const c = a.ctx[it.id], g = c.genes[j], k = homNbItems(a).findIndex(x => x.id === it.id), f = k >= 0 ? a.nbFam.per[k][j] : -1, F = sum.byF.get(f);
-  box.innerHTML = '';
-  box.append(el('h4', { class: 'sub-h' }, (g.n || g.l || g.t) + (g.self ? ' — the homologue' : '')),
-    el('p', {}, el('i', {}, c.org || (it.h && it.h.org) || a.query.org), ' · ' + (g.p || 'no product name') + (g.l ? ' · ' + g.l : '') + (g.aa ? ' · ' + g.aa.length + ' aa' : '')),
-    el('p', { class: 'small' }, (c.nuc || '') + ': ' + fmtInt(g.s) + '–' + fmtInt(g.e) + (g.str < 0 ? ' (minus strand)' : ' (plus strand)') + (F ? '. Family ' + F.no + (F.name ? ' (' + F.name + ')' : '') + ': next to ' + F.n + ' of the ' + homNbItems(a).length + ' homologues.' : '.')),
-    el('div', { class: 'actions' }, c.nuc && c.src !== 'local' ? ext(LINKS.ncbiRegion(c.nuc, g.s, g.e), 'Open at NCBI') : '',
-      g.aa ? el('button', { class: 'btn small', onclick: () => copyText('>' + (g.l || g.n || 'gene') + ' ' + (g.p || '') + ' [' + (c.org || '') + ']\n' + wrapFasta(g.aa), 'Protein') }, 'Copy protein') : '',
-      g.aa ? el('button', { class: 'btn small', onclick: () => window.open(LINKS.blastp(g.aa), '_blank', 'noopener') }, 'BLAST at NCBI') : ''));
-}
-function homNbFigure(app, a, items, sum, fmt) {
-  const V = a.nbView || {}, cols = homNbColors(sum, 'light');
-  const order = (() => { const idx = items.map((x, k) => k); if (V.order === 'tree') { const t = homTreeOrder(a); if (t) { const pos = new Map(t.map((r, i) => [r, i])); idx.sort((x, y) => (pos.get(items[x].row) ?? 1e9) - (pos.get(items[y].row) ?? 1e9)); } } return idx; })();
-  downloadChartSVG(o => homNbSVG(app, a, items, sum, cols, order, Object.assign({}, o, { view: Object.assign({}, V, { hl: null }) })), safeFileName(homQueryName(a) + '_neighbourhoods'), 'Genes around ' + homQueryName(a) + ' and ' + plural(items.length - 1, 'homologue'), fmt);
-}
-function homNbFamilyFasta(a, items, F) {
-  const recs = F.genes.filter(x => x.g.aa).map(x => { const it = items[x.k], c = a.ctx[it.id]; return { name: alnSafeName((x.g.l || x.g.n || 'gene') + '_' + ((c.org || (it.h && it.h.org) || '').split(' ').slice(0, 2).join('_')), 60), desc: (x.g.p || '') + ' [' + (c.org || '') + '] ' + (c.nuc || '') + ':' + x.g.s + '-' + x.g.e, seq: x.g.aa }; });
-  download(safeFileName(homQueryName(a) + '_family_' + F.no + (F.name ? '_' + F.name : '')) + '.faa', fastaText(recs), 'text/plain');
-}
-function homNbExcel(app, a, items, sum) {
-  const N = items.length;
-  const t1 = [['family', 'gene name', 'protein', 'next to homologues', 'share %', 'usual place', 'same direction %', 'phyla']].concat(sum.list.map(F => [F.no, F.isSelf ? homQueryName(a) + ' (the homologues)' : F.name, F.product, F.n, +(F.n / N * 100).toFixed(1), F.isSelf ? 0 : F.relMed, +(F.sameShare * 100).toFixed(1), [...F.phyla.entries()].map(([p, n]) => p + ' ' + n).join('; ')]));
-  const t2 = [['homologue', 'organism', 'sequence', 'start', 'end', 'strand', 'type', 'gene', 'locus tag', 'product', 'length aa', 'family', 'is the homologue']];
-  items.forEach((it, k) => { const c = a.ctx[it.id]; c.genes.forEach((g, j) => { const F = sum.byF.get(a.nbFam.per[k][j]); t2.push([it.id === 'query' ? homQueryName(a) : (it.h && it.h.acc) || it.id, c.org || (it.h && it.h.org) || '', c.nuc || '', g.s, g.e, g.str < 0 ? '-' : '+', g.t, g.n, g.l, g.p, g.aa ? g.aa.length : '', F ? F.no : '', g.self ? 'yes' : '']); }); });
-  downloadXlsx(safeFileName(homQueryName(a) + '_neighbourhoods') + '.xlsx', [{ name: 'Families', rows: t1, widths: [8, 14, 44, 10, 9, 10, 12, 50], filter: true }, { name: 'Genes', rows: t2, widths: [16, 30, 14, 10, 10, 6, 8, 10, 14, 44, 9, 8, 10], filter: true },
-    xlsxInfoSheet(app, [['Families', 'proteins similar at E ≤ 1e-5 (GenOrbit’s Smith-Waterman search) with the shorter at least half as long as the longer, joined into groups'], ['Window', '± ' + Math.round(Math.min(...items.map(it => a.ctx[it.id].win)) / 1000) + ' kb around each homologue']])]);
-}
-/** Share of the neighbourhoods of each phylum that contain each family (top families × phyla). */
-function homNbMatrixSVG(a, items, sum, opt = {}) {
-  const { ink, ink3, line } = chartInk(opt);
-  const phy = new Map();
-  items.forEach((it, k) => { const p = it.id === 'query' ? ((a.query.lineage || {}).phylum || 'Unknown') : (homRankOf(it.h || {}, 'phylum') || 'Unknown'); phy.set(p, (phy.get(p) || []).concat(k)); });
-  const cols = [...phy.entries()].sort((x, y) => y[1].length - x[1].length).slice(0, 12);
-  const fams = sum.list.filter(F => !F.isSelf && F.n >= 2).slice(0, 18);
-  const CW = 74, RH = 20, LW = 230, TH = 64;
-  const W = Math.max(560, LW + (cols.length + 1) * CW + 10), H = TH + Math.max(1, fams.length) * RH + 30;
-  const svg = svgNode('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', role: 'img', 'aria-label': 'Neighbouring families by phylum', style: 'max-width:' + W + 'px' });
-  const heads = [['All', items.map((x, k) => k)]].concat(cols);
-  heads.forEach(([p, ks], i) => {
-    const x = LW + i * CW + CW / 2;
-    svgNode('text', { x, y: TH - 22, 'text-anchor': 'middle', 'font-size': 10.5, 'font-weight': i === 0 ? 700 : 400, fill: ink }, svg, truncate(p, 13));
-    svgNode('text', { x, y: TH - 8, 'text-anchor': 'middle', 'font-size': 9.5, fill: ink3 }, svg, 'n = ' + ks.length);
-  });
-  if (!fams.length) svgNode('text', { x: LW, y: TH + 14, 'font-size': 11, fill: ink3 }, svg, 'No family is shared by two or more neighbourhoods.');
-  const ramp = v => rampColor([[0, opt.theme === 'light' || opt.mode !== 'dark' ? '#F4F2FA' : '#2A2738'], [1, '#5A3DB8']], v);
-  fams.forEach((F, r) => {
-    const y = TH + r * RH;
-    svgNode('text', { x: LW - 8, y: y + RH / 2 + 4, 'text-anchor': 'end', 'font-size': 10.5, fill: ink }, svg, truncate(F.no + '. ' + (F.name ? F.name + ' · ' : '') + (F.product || ''), 38));
-    heads.forEach(([p, ks], i) => {
-      const n = ks.filter(k => F.items.has(k)).length, v = ks.length ? n / ks.length : 0;
-      const x = LW + i * CW;
-      svgNode('rect', { x: x + 2, y: y + 1, width: CW - 4, height: RH - 2, rx: 2, fill: ramp(v) }, svg);
-      svgNode('text', { x: x + CW / 2, y: y + RH / 2 + 4, 'text-anchor': 'middle', 'font-size': 10, fill: v > 0.55 ? '#FFFFFF' : ink }, svg, n ? Math.round(v * 100) + '%' : '·');
-    });
-  });
-  svgNode('text', { x: 8, y: H - 10, 'font-size': 10, fill: ink3 }, svg, 'Share of the homologues of each phylum that have the family within the window.');
-  return svg;
-}
-
 /* ---------------- sessions ---------------- */
 /** The homologue analyses as plain data for the session file (working copies and caches left out). */
 function homSessionData(app) {
@@ -16681,6 +16508,755 @@ function homSessionRestore(app, data, byKey) {
     a.task = null;
   }
   return { list: data.list, cur: data.cur && data.list.some(a => a.id === data.cur) ? data.cur : (data.list[0] ? data.list[0].id : null) };
+}
+
+/* ---------------- homologue files (the Homologues tab's own save and open) ---------------- */
+const HOM_FILE_TYPE = 'genorbit-homologues';
+/** Save the current analysis, or all of them, as a file of their own (.genorbit-hom.json.gz). */
+async function homSaveFile(app, which) {
+  const H = homState(app), a = homCurrent(app), g = app.genome;
+  if (!H.list.length || !g) return;
+  const busy = H.list.find(x => x.task && (which === 'all' || x === a));
+  if (busy) { toast('Wait until “' + busy.task.label + '” has finished, or stop it.'); return; }
+  const data = homSessionData(app);
+  const list = which === 'one' && a ? data.list.filter(x => x.id === a.id) : data.list;
+  const file = { app: 'GenOrbit', type: HOM_FILE_TYPE, version: 1, saved: new Date().toISOString(),
+    genome: { key: g.key, name: g.name, strain: g.strain || '', accession: g.accession || '' }, list, cur: which === 'one' && a ? a.id : data.cur };
+  const gz = typeof CompressionStream !== 'undefined';
+  const name = safeFileName(which === 'one' && a ? homQueryName(a) + '_homologues' : g.name + '_homologues') + '_' + fileTimeStamp() + (gz ? '.genorbit-hom.json.gz' : '.genorbit-hom.json');
+  let handle = null;
+  if (typeof window.showSaveFilePicker === 'function') {
+    try { handle = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'GenOrbit homologues', accept: gz ? { 'application/gzip': ['.gz'] } : { 'application/json': ['.json'] } }] }); }
+    catch (e) { if (e && e.name === 'AbortError') return; console.warn(e); handle = null; }   // blocked by a policy: download instead
+  }
+  const json = JSON.stringify(file);
+  const blob = (gz ? await gzipText(json) : null) || new Blob([json], { type: 'application/json' });
+  let saved = false;
+  if (handle) {
+    try { const w = await handle.createWritable(); await w.write(blob); await w.close(); saved = true; }
+    catch (e) { console.error(e); toast('The file could not be written (' + (e.message || e) + '), so it is downloaded instead.', 'error'); }
+  }
+  if (!saved) download(name, blob, blob.type || 'application/octet-stream');
+  toast('Saved ' + (list.length === 1 ? 'the analysis of ' + homQueryName(list[0]) : list.length + ' homologue analyses') + ' (' + (blob.size < 1e6 ? Math.max(1, Math.round(blob.size / 1024)) + ' KB' : (blob.size / 1048576).toFixed(1) + ' MB') + ').');
+}
+/** Choose a homologue file (or a whole session file) and add its analyses to the open ones. */
+function homOpenFilePicker(app) {
+  const inp = el('input', { type: 'file', accept: '.gz,.json', hidden: true });
+  document.body.appendChild(inp);
+  inp.addEventListener('change', async () => {
+    const file = inp.files && inp.files[0];
+    inp.remove();
+    if (!file) return;
+    try { homOpenText(app, await readFileText(file), file.name); }
+    catch (e) { console.error(e); toast('Could not read ' + file.name + ': ' + (e.message || e), 'error'); }
+  });
+  inp.click();
+}
+/** Is this text a homologue file? (Checked before a session is opened.) */
+function homIsFile(text) { return /^\s*\{\s*"app"\s*:\s*"GenOrbit"\s*,\s*"type"\s*:\s*"genorbit-homologues"/.test(text.slice(0, 200)); }
+/**
+ * Add the analyses of a homologue file, or of a session file's Homologues tab, to the open ones.
+ * Genes of the loaded genome are found again by their place in the feature list; an analysis that is
+ * already open (same one, same last change) is not added twice; one with the same name gets a new one.
+ */
+function homOpenText(app, text, fileName) {
+  let d;
+  try { d = JSON.parse(text); } catch (e) { toast(fileName + ' is not a GenOrbit file.', 'error'); return 0; }
+  const fromSession = d && d.app === 'GenOrbit' && d.type !== HOM_FILE_TYPE && d.genome && d.genome.records;
+  const data = d && d.app === 'GenOrbit' && d.type === HOM_FILE_TYPE ? d : fromSession ? d.hom : null;
+  if (!data || !Array.isArray(data.list)) { toast(fromSession ? 'This session has no homologue analyses.' : fileName + ' is not a GenOrbit homologue file.', 'error'); return 0; }
+  if (!data.list.length) { toast('This file has no homologue analyses.'); return 0; }
+  const g = app.genome;
+  if (!g) { toast('Load a genome first (any genome works; the analyses were made with ' + ((d.genome && d.genome.name) || 'another genome') + '), then open the file again.', 'error', 9000); return 0; }
+  const byKey = new Map(g.features.map(f => [f.ri + ':' + f.i, f]));
+  const got = homSessionRestore(app, { list: data.list, cur: data.cur }, byKey);
+  const H = homState(app), have = new Map(H.list.map(x => [x.id, x]));
+  let added = 0, same = 0, cur = null;
+  for (const a of got.list) {
+    const old = have.get(a.id);
+    if (old && (old.updated || old.created) === (a.updated || a.created)) { same++; if (a.id === got.cur) cur = old.id; continue; }
+    const wasCur = a.id === got.cur;
+    if (old) a.id = 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    H.list.push(a); have.set(a.id, a); added++;
+    if (wasCur || !cur) cur = a.id;
+  }
+  if (cur) H.cur = cur;
+  if (added) homChanged(app);
+  const other = got.list.filter(a => a.query.genomeKey !== g.key).length;
+  toast((added ? 'Opened ' + plural(added, 'homologue analysis', 'homologue analyses') : 'Nothing new') + (same ? ' (' + plural(same, 'analysis', 'analyses') + ' already open)' : '') + ' from ' + fileName + '.' +
+    (other ? ' ' + other + ' of them ' + (other === 1 ? 'was' : 'were') + ' made with another genome (' + ((d.genome && d.genome.name) || 'not the one loaded') + '); everything except “show the gene” works.' : ''), 'info', 8000);
+  if (app.activeTab !== 'hom') app.showTab('hom'); else renderHomTab(app);
+  return added;
+}
+
+/* ===== 15h_hom_nb.js ===== */
+/* ==========================================================================
+   15h_hom_nb.js — Homologues: the genes around each homologue
+   --------------------------------------------------------------------------
+   Rows of gene arrows centred on each homologue (turned so that it points
+   right). The window is set in kilobases or in genes on each side, drawn to
+   scale or as a schematic (genes in order, all the same width).
+   Genes are coloured by GenOrbit's own protein families, or by annotations
+   looked up for every neighbouring protein: eggNOG orthologous group, Pfam
+   domain, UniProt protein family or biological-process keyword. UniParc
+   finds each protein by its sequence checksum (CRC64), so this works for
+   any protein in the public archives, whatever its ID; UniProtKB gives the
+   annotations. As in GeCoViz, a term is coloured when it lies near at least
+   a chosen share of the homologues (its "vertical conservation").
+   ========================================================================== */
+'use strict';
+
+const HOM_NB_BY = [
+  ['fam', 'Families (similar proteins)'],
+  ['og', 'eggNOG orthologous group'],
+  ['pfam', 'Pfam domain'],
+  ['pfamily', 'Protein family (UniProt)'],
+  ['kw', 'Biological process (UniProt keyword)'],
+  ['name', 'Gene name'],
+  ['dir', 'Direction (same as the homologue or not)']
+];
+const HOM_NB_ANN = new Set(['og', 'pfam', 'pfamily', 'kw']);
+const HOM_NB_FILL = new Set(['og', 'pfamily']);     // terms that a gene without its own can take from its family
+function homNbDefaultView(a) { return { order: a.tree ? 'tree' : 'aligned', labels: true, hl: null, by: 'fam', thr: 0.5, win: 'kb', kb: 10, n: 4, schematic: false, fill: true }; }
+/** A term's name for the legend and files; the term most homologues have is marked as theirs. */
+function homNbLab(t, n) { const tag = t.tag || ''; return n ? truncate(t.label, Math.max(12, n - tag.length)) + tag : t.label + tag; }
+
+/* ---------------- which rows, and the families ---------------- */
+function homNbItems(a) { return homCtxItems(a).filter(it => a.ctx && a.ctx[it.id] && a.ctx[it.id].st === 'ok' && a.ctx[it.id].genes && a.ctx[it.id].genes.length); }
+function homNbKey(a, items) { return items.map(it => it.id + ':' + a.ctx[it.id].genes.length + ':' + a.ctx[it.id].win).join('|'); }
+/** Group the proteins of all neighbourhoods into families (similar proteins of similar length), in Web Workers. */
+async function homNbFamilies(app, a) {
+  const items = homNbItems(a);
+  if (items.length < 2) return;
+  await homTask(app, a, 'Gene families', async task => {
+    const prots = [], owner = [];
+    items.forEach((it, k) => a.ctx[it.id].genes.forEach((g, j) => { if (g.aa && g.aa.length >= 30) { prots.push(g.aa); owner.push([k, j]); } }));
+    task.set('comparing ' + plural(prots.length, 'neighbouring protein') + ' with each other', 0);
+    const res = await parallelSearch(prots, prots, { maxE: 1e-5, maxCand: 40, topK: 40, skipSelf: true }, (d, n) => { task.set('comparing neighbouring proteins (' + fmtInt(d) + ' of ' + fmtInt(n) + ')', d / n); });
+    const links = [];
+    res.forEach((list, i) => { for (const r of list || []) { const la = prots[i].length, lb = prots[r.t].length; if (Math.min(la, lb) / Math.max(la, lb) >= 0.5) links.push([i, r.t]); } });
+    const selfIdx = owner.map(([k, j], i) => a.ctx[items[k].id].genes[j].self ? i : -1).filter(i => i >= 0);
+    for (let i = 1; i < selfIdx.length; i++) links.push([selfIdx[0], selfIdx[i]]);
+    const fam = groupFamilies(prots.length, links);
+    // per gene: family number (−1 = no protein / too short)
+    const per = items.map(it => new Array(a.ctx[it.id].genes.length).fill(-1));
+    owner.forEach(([k, j], i) => { per[k][j] = fam[i]; });
+    // the homologue's own family; when the homologues have no protein here, they get a family of their own
+    let selfFam = selfIdx.length ? fam[selfIdx[0]] : -1;
+    const fmax = Math.max(-1, ...fam);
+    if (selfFam < 0) { selfFam = fmax + 1; items.forEach((it, k) => a.ctx[it.id].genes.forEach((g, j) => { if (g.self) per[k][j] = selfFam; })); }
+    a.nbFam = { key: homNbKey(a, items), ids: items.map(it => it.id), per, selfFam, when: new Date().toISOString() };
+  });
+}
+
+/* ---------------- the window: kilobases or genes on each side ---------------- */
+/** For every row, the indices of the genes shown. */
+function homNbVisible(a, items, V) {
+  return items.map(it => {
+    const c = a.ctx[it.id], G = c.genes;
+    let si = G.findIndex(g => g.self);
+    if (si < 0) si = 0;
+    if (V.win === 'genes') {
+      const n = V.n || 4, out = [];
+      for (let j = Math.max(0, si - n); j <= Math.min(G.length - 1, si + n); j++) out.push(j);
+      return out;
+    }
+    const self = G[si] || { s: c.start, e: c.end }, w = (V.kb || 10) * 1000;
+    const out = [];
+    G.forEach((g, j) => { if (g.e >= self.s - w && g.s <= self.e + w) out.push(j); });
+    return out;
+  });
+}
+/** Families with their numbers, names, place relative to the homologue, phyla and annotations (shown genes only). */
+function homNbSummary(a, items, vis) {
+  const NF = a.nbFam, fams = new Map();
+  items.forEach((it, k) => {
+    const c = a.ctx[it.id], genes = c.genes, per = NF.per[k];
+    const si = Math.max(0, genes.findIndex(g => g.self)), self = genes[si], dir = self ? self.str : 1;
+    for (const j of vis[k]) {
+      const g = genes[j], f = per[j];
+      if (f < 0) continue;
+      let F = fams.get(f);
+      if (!F) { F = { f, items: new Set(), genes: [], rel: [], same: 0, names: new Map(), prods: new Map(), phyla: new Map() }; fams.set(f, F); }
+      F.genes.push({ k, j, g });
+      if (!F.items.has(k)) {
+        F.items.add(k);
+        const ph = homNbPhylum(a, it);
+        F.phyla.set(ph, (F.phyla.get(ph) || 0) + 1);
+      }
+      F.rel.push((j - si) * (dir > 0 ? 1 : -1)); if (g.str === dir) F.same++;
+      if (g.n) F.names.set(g.n, (F.names.get(g.n) || 0) + 1);
+      if (g.p) F.prods.set(g.p, (F.prods.get(g.p) || 0) + 1);
+    }
+  });
+  const top = m => [...m.entries()].sort((x, y) => y[1] - x[1])[0];
+  const list = [...fams.values()].map(F => {
+    F.rel.sort((x, y) => x - y);
+    const nm = top(F.names), pr = [...F.prods.entries()].filter(e => !/hypothetical/i.test(e[0])).sort((x, y) => y[1] - x[1])[0] || top(F.prods);
+    // annotations shared by the members (when they have been looked up)
+    const og = new Map(), pf = new Map();
+    for (const { g } of F.genes) if (g.ann) {
+      for (const o of g.ann.og || []) og.set(o, (og.get(o) || 0) + 1);
+      for (const [id, name] of g.ann.pf || []) { const key = id + '\t' + name; pf.set(key, (pf.get(key) || 0) + 1); }
+    }
+    const most = (m, min) => [...m.entries()].filter(e => e[1] >= min).sort((x, y) => y[1] - x[1]);
+    return Object.assign(F, { n: F.items.size, name: nm ? nm[0] : '', product: pr ? pr[0] : '', relMed: F.rel[F.rel.length >> 1], sameShare: F.same / F.genes.length, isSelf: F.f === NF.selfFam,
+      og: most(og, 1).slice(0, 2).map(e => e[0]), pf: most(pf, Math.max(1, Math.ceil(F.genes.length * 0.3))).slice(0, 3).map(e => e[0].split('\t')) });
+  }).sort((x, y) => (y.isSelf - x.isSelf) || (y.n - x.n) || (Math.abs(x.relMed) - Math.abs(y.relMed)));
+  list.forEach((F, i) => { F.no = i + 1; });
+  return { list, byF: new Map(list.map(F => [F.f, F])) };
+}
+function homNbPhylum(a, it) { return it.id === 'query' ? ((a.query.lineage || {}).phylum || 'Unknown') : (homRankOf(it.h || {}, 'phylum') || 'Unknown'); }
+
+/* ---------------- colour terms and their vertical conservation ---------------- */
+/**
+ * One term per shown gene for the chosen colouring. A gene with several (Pfam domains, keywords,
+ * eggNOG groups at different levels) takes the one found near the most homologues, so the same
+ * protein gets the same colour in every genome. score = rows with the term / all rows.
+ */
+function homNbTerms(a, items, vis, by, sum, fill) {
+  const N = items.length;
+  const selfStr = items.map(it => { const s = a.ctx[it.id].genes.find(g => g.self); return s ? s.str : 1; });
+  const own = (k, j, g) => {
+    switch (by) {
+      case 'fam': { const f = a.nbFam.per[k][j]; return f >= 0 ? ['F' + f] : []; }
+      case 'name': return g.n ? [g.n] : [];
+      case 'dir': return [g.self ? 'self' : g.str === selfStr[k] ? 'same' : 'opposite'];
+      case 'og': return g.ann && g.ann.og ? g.ann.og : [];
+      case 'pfam': return g.ann && g.ann.pf ? g.ann.pf.map(p => p[0]) : [];
+      case 'pfamily': return g.ann && g.ann.fm ? [g.ann.fm] : [];
+      case 'kw': return g.ann && g.ann.kw ? g.ann.kw : [];
+    }
+    return [];
+  };
+  // a gene without its own eggNOG group (or protein family) can take the most common one of its family:
+  // many proteins have a UniProt entry without these, while a similar protein next door has them
+  let famVal = null;
+  if (fill && HOM_NB_FILL.has(by) && a.nbFam) {
+    famVal = new Map();
+    items.forEach((it, k) => a.ctx[it.id].genes.forEach((g, j) => {
+      const f = a.nbFam.per[k][j];
+      if (f < 0) return;
+      for (const t of own(k, j, g)) { let m = famVal.get(f); if (!m) famVal.set(f, m = new Map()); m.set(t, (m.get(t) || 0) + 1); }
+    }));
+  }
+  const fromFam = (k, j) => { const f = a.nbFam.per[k][j], m = f >= 0 && famVal.get(f); return m ? [[...m.entries()].sort((x, y) => y[1] - x[1])[0][0]] : []; };
+  const inf = items.map(() => new Set());
+  const cand = (k, j, g) => {
+    const c = own(k, j, g);
+    if (c.length || !famVal) return c;
+    const t = fromFam(k, j);
+    if (t.length) inf[k].add(j);
+    return t;
+  };
+  const reach = new Map(), pfName = new Map();
+  items.forEach((it, k) => {
+    const G = a.ctx[it.id].genes;
+    for (const j of vis[k]) {
+      const g = G[j];
+      if (g.ann && g.ann.pf) for (const [id, nm] of g.ann.pf) if (nm && !pfName.has(id)) pfName.set(id, nm);
+      for (const t of cand(k, j, g)) { let s = reach.get(t); if (!s) reach.set(t, s = new Set()); s.add(k); }
+    }
+  });
+  const per = items.map(() => new Map()), terms = new Map();
+  let annotated = 0, proteins = 0;
+  items.forEach((it, k) => {
+    const G = a.ctx[it.id].genes;
+    for (const j of vis[k]) {
+      const g = G[j];
+      if (g.aa) { proteins++; if (g.ann) annotated++; }
+      const cs = cand(k, j, g);
+      if (!cs.length) continue;
+      let best = cs[0];
+      for (const t of cs) if (reach.get(t).size > reach.get(best).size) best = t;
+      per[k].set(j, best);
+      let T = terms.get(best);
+      if (!T) terms.set(best, T = { key: best, rows: new Set(), genes: [], self: 0, names: new Map() });
+      T.rows.add(k); T.genes.push([k, j]); if (g.self) T.self++;
+      const nm = (g.ann && g.ann.pn) || g.p;
+      if (nm && !/hypothetical/i.test(nm)) T.names.set(nm, (T.names.get(nm) || 0) + 1);
+    }
+  });
+  const list = [...terms.values()];
+  let filled = 0;
+  items.forEach((it, k) => { for (const j of vis[k]) if (inf[k].has(j)) filled++; });
+  for (const T of list) {
+    T.n = T.rows.size; T.score = T.n / N;
+    const top = [...T.names.entries()].sort((x, y) => y[1] - x[1])[0];
+    T.desc = top ? top[0] : '';
+    if (by === 'fam') { const F = sum.byF.get(+T.key.slice(1)); T.label = F ? (F.isSelf ? homQueryName(a) + ' (the homologues)' : 'Family ' + F.no + (F.name ? ' · ' + F.name : '')) : T.key; T.desc = F ? F.product : T.desc; }
+    else if (by === 'pfam') T.label = T.key + (pfName.get(T.key) ? ' · ' + pfName.get(T.key) : '');
+    else if (by === 'dir') T.label = { self: 'the homologue', same: 'same direction as the homologue', opposite: 'opposite direction' }[T.key];
+    else T.label = T.key;
+  }
+  list.sort((x, y) => y.n - x.n || y.genes.length - x.genes.length);
+  const selfT = list.filter(T => T.self).sort((x, y) => y.self - x.self)[0];
+  // the term most homologues have is shown as theirs (the homologues themselves are always violet)
+  if (selfT && by !== 'fam' && by !== 'dir' && by !== 'name') selfT.tag = ' (as ' + homQueryName(a) + ')';
+  return { by, per, terms, list, selfKey: selfT ? selfT.key : null, N, annotated, proteins, inf, filled };
+}
+/** Colours: the homologues' own term in violet, then the terms at or above the threshold (most widespread first). */
+function homNbColours(T, thr, mode) {
+  const cat = CAT[mode] || CAT.light, slots = [0, 1, 2, 3, 4, 5, 7];
+  const accent = mode === 'dark' ? '#9D86F5' : '#5A3DB8';
+  const col = new Map();
+  if (T.by === 'dir') { col.set('self', accent); col.set('same', cat[0]); col.set('opposite', cat[3]); return { col, pass: [], over: 0 }; }
+  if (T.selfKey) col.set(T.selfKey, accent);
+  const pass = T.list.filter(t => t.key !== T.selfKey && t.n >= 2 && t.score >= thr - 1e-9);
+  pass.slice(0, slots.length).forEach((t, i) => col.set(t.key, cat[slots[i]]));
+  return { col, pass, over: Math.max(0, pass.length - slots.length) };
+}
+/** Everything a drawing needs, for the current settings. */
+function homNbModel(a, items, V, mode) {
+  const vis = homNbVisible(a, items, V);
+  const sum = homNbSummary(a, items, vis);
+  const by = HOM_NB_BY.some(b => b[0] === V.by) ? V.by : 'fam';
+  const T = homNbTerms(a, items, vis, by, sum, V.fill !== false);
+  const C = homNbColours(T, V.thr == null ? 0.5 : V.thr, mode);
+  return { vis, sum, T, C, mode, needAnn: HOM_NB_ANN.has(by) };
+}
+function homNbGeneFill(M, k, j, g) {
+  const dark = M.mode === 'dark';
+  if (g.self && M.T.by !== 'dir') return { fill: dark ? '#9D86F5' : '#5A3DB8', nodata: false };   // the homologues are always violet
+  const t = M.T.per[k].get(j), c = t != null ? M.C.col.get(t) : null;
+  if (c) return { fill: c, nodata: false };
+  const nodata = !g.aa || (M.needAnn && !g.ann);
+  return { fill: nodata ? (dark ? '#2B2838' : '#F1F0F5') : (dark ? '#4A4660' : '#D8D5E3'), nodata };
+}
+
+/* ---------------- the section ---------------- */
+function homNbView(app, a, host) {
+  const blk = el('div', { class: 'block hom-nb' });
+  host.appendChild(blk);
+  blk.appendChild(homCtxCard(app, a));
+  const items = homNbItems(a);
+  if (items.length < 2) { blk.appendChild(el('p', { class: 'note-box' }, 'This needs the genes around at least two homologues. Press “Get DNA and neighbouring genes” above.')); return; }
+  const key = homNbKey(a, items);
+  if (!a.nbFam || a.nbFam.key !== key) {
+    // start once by itself; after a failure (or a stop) offer a button instead of trying again and again
+    if (a._nbTried !== key && !a.task) { a._nbTried = key; setTimeout(() => homNbFamilies(app, a), 0); blk.appendChild(el('p', { class: 'muted' }, 'Grouping the neighbouring genes into families…')); }
+    else if (a.task) blk.appendChild(el('p', { class: 'muted' }, 'Waiting for “' + a.task.label + '” to finish…'));
+    else blk.appendChild(el('p', {}, el('button', { class: 'btn primary', onclick: () => homNbFamilies(app, a) }, 'Group the neighbouring genes into families')));
+    return;
+  }
+  const V = a.nbView = Object.assign(homNbDefaultView(a), a.nbView || {});
+  const mode = app.mode(), N = items.length;
+  const maxKb = Math.round(Math.min(...items.map(it => a.ctx[it.id].win)) / 1000);
+  if (V.kb > maxKb) V.kb = maxKb;
+  let M = homNbModel(a, items, V, mode);
+
+  // what the picture shows
+  const intro = el('p', { class: 'block-sub' });
+  blk.appendChild(intro);
+  // annotations
+  const annBox = el('div', { class: 'hom-nbann' });
+  blk.appendChild(annBox);
+  const drawAnn = () => {
+    annBox.innerHTML = '';
+    let prot = 0, done = 0, found = 0;
+    for (const it of items) for (const g of a.ctx[it.id].genes) if (g.aa) { prot++; if (g.ann !== undefined) { done++; if (g.ann) found++; } }
+    const left = prot - done;
+    const has = { og: 0, pf: 0, fm: 0, kw: 0 };
+    for (const it of items) for (const g of a.ctx[it.id].genes) if (g.ann) { if (g.ann.og.length) has.og++; if (g.ann.pf.length) has.pf++; if (g.ann.fm) has.fm++; if (g.ann.kw.length) has.kw++; }
+    annBox.append(el('span', { class: 'small' }, el('b', {}, 'Annotations: '), done ? fmtInt(found) + ' of ' + fmtInt(prot) + ' neighbouring proteins found in UniParc' + (left ? '; ' + fmtInt(left) + ' not looked up yet' : '') + '. With a Pfam domain ' + fmtInt(has.pf) + ', an eggNOG group ' + fmtInt(has.og) + ', a protein family ' + fmtInt(has.fm) + ', biological-process keywords ' + fmtInt(has.kw) + '.' : 'eggNOG groups, Pfam domains, protein families and keywords can be looked up for the ' + fmtInt(prot) + ' neighbouring proteins (UniParc and UniProt, about a minute for 1,000 proteins).'),
+      left ? el('button', { class: 'btn small' + (done ? '' : ' primary'), onclick: () => homNbAnnotate(app, a) }, done ? 'Look up the rest' : 'Look up annotations') : '');
+  };
+  drawAnn();
+
+  // controls (in one row above the picture)
+  const sel = (opts, val, label, set) => {
+    const s = el('select', { 'aria-label': label }, ...opts.map(([v, l, dis]) => el('option', { value: String(v), selected: String(v) === String(val), disabled: !!dis }, l)));
+    s.addEventListener('change', () => set(s.value));
+    return s;
+  };
+  const anyAnn = items.some(it => a.ctx[it.id].genes.some(g => g.ann));
+  const bySel = sel(HOM_NB_BY.map(([v, l]) => [v, l + (HOM_NB_ANN.has(v) && !anyAnn ? ' (look up annotations first)' : ''), HOM_NB_ANN.has(v) && !anyAnn]), V.by, 'Colour genes by', v => { V.by = v; V.hl = null; fillChk.hidden = !HOM_NB_FILL.has(v); redraw(); });
+  const winSel = sel([['kb', 'kilobases'], ['genes', 'genes on each side']], V.win, 'Window', v => { V.win = v; kbSel.hidden = v !== 'kb'; nSel.hidden = v !== 'genes'; redraw(); });
+  const kbSel = sel([2, 5, 10, 20].filter(v => v <= maxKb).map(v => [v, '± ' + v + ' kb']), V.kb, 'Kilobases on each side', v => { V.kb = +v; redraw(); });
+  const nSel = sel(Array.from({ length: 10 }, (x, i) => [i + 1, (i + 1) + ' on each side']), V.n, 'Genes on each side', v => { V.n = +v; redraw(); });
+  kbSel.hidden = V.win !== 'kb'; nSel.hidden = V.win !== 'genes';
+  const ordSel = sel([['aligned', 'as in the alignment'], ['tree', 'as in the tree', !a.tree], ['taxonomy', 'by taxonomy']], V.order, 'Order of the rows', v => { V.order = v; draw(); });
+  const thrOut = el('output', {}, Math.round(V.thr * 100) + '%');
+  const thrIn = el('input', { type: 'range', min: 0, max: 100, step: 5, value: Math.round(V.thr * 100), 'aria-label': 'Colour terms found near at least this share of the homologues' });
+  thrIn.addEventListener('input', () => { V.thr = +thrIn.value / 100; thrOut.textContent = thrIn.value + '%'; redraw(true); });
+  const chk = (keyName, label, fn) => { const c = el('input', { type: 'checkbox' }); c.checked = !!V[keyName]; c.addEventListener('change', () => { V[keyName] = c.checked; fn(); }); return el('label', { class: 'inline-check' }, c, ' ' + label); };
+  const fillChk = chk('fill', 'fill gaps from the family', () => redraw());
+  fillChk.title = 'A gene whose UniProt entry has no eggNOG group (or protein family) takes the most common one of its family of similar neighbouring proteins';
+  fillChk.hidden = !HOM_NB_FILL.has(V.by);
+  blk.appendChild(el('div', { class: 'hom-nbctl' },
+    el('label', { class: 'gf-field' }, 'Colour genes by', bySel),
+    el('label', { class: 'gf-field' }, 'Window', el('span', { class: 'hom-pair' }, winSel, kbSel, nSel)),
+    el('label', { class: 'gf-field hom-thr', title: 'Like GeCoViz’s vertical conservation: a term is coloured when it is near at least this share of the homologues' }, 'Colour when near at least', el('span', { class: 'hom-pair' }, thrIn, thrOut)),
+    el('label', { class: 'gf-field' }, 'Rows', ordSel),
+    fillChk, chk('schematic', 'schematic (not to scale)', () => draw()), chk('labels', 'gene names', () => draw())));
+  const legend = el('div', { class: 'nb-legend', 'aria-label': 'Colours' });
+  const figBox = el('div', { class: 'hom-nbbox' });
+  const detail = el('div', { class: 'hom-detail' });
+  blk.append(legend, figBox, detail,
+    el('div', { class: 'hom-actions' },
+      downloadGroup('Figure', [['SVG', () => homNbFigure(app, a, items, 'svg')], ['PNG', () => homNbFigure(app, a, items, 'png')]]),
+      downloadGroup('Genes', [['TSV', () => homNbTsv(app, a, items)], ['Excel (with families)', () => homNbExcel(app, a, items)]])));
+  const order = () => homNbOrder(a, items, V);
+
+  function drawIntro() {
+    const by = M.T.by, kbTxt = V.win === 'genes' ? V.n + ' gene' + (V.n > 1 ? 's' : '') + ' on each side of' : 'genes within ± ' + V.kb + ' kb of';
+    const how = {
+      fam: 'Genes whose proteins are similar (E ≤ 10⁻⁵) and of similar length (the shorter at least half the longer) form a family.',
+      og: 'Colours are eggNOG orthologous groups (from UniProt).', pfam: 'Colours are Pfam domains (from UniParc); a protein with several takes the most widespread one.',
+      pfamily: 'Colours are UniProt protein families (“belongs to the … family”).', kw: 'Colours are UniProt biological-process keywords; a protein with several takes the most widespread one.',
+      name: 'Colours are gene names from the genome annotations.', dir: 'Colours show whether a gene points the same way as the homologue.'
+    }[by];
+    const top = by === 'dir' ? [] : M.T.list.filter(t => t.key !== M.T.selfKey && t.n >= 2 && t.score >= 0.5);
+    intro.textContent = 'The ' + kbTxt + ' ' + plural(N, 'homologue') + ', each turned so that the homologue points right. ' + how + ' ' +
+      (by === 'dir' ? '' : top.length ? fmtInt(top.length) + (top.length === 1 ? ' is' : ' are') + ' next to the homologue in at least half of the genomes: ' + top.slice(0, 6).map(t => truncate(t.label, 40)).join(', ') + (top.length > 6 ? ', …' : '') + '.' : 'None is next to the homologue in half of the genomes.');
+  }
+  function drawLegend() {
+    legend.innerHTML = '';
+    const shown = M.T.list.filter(t => M.C.col.has(t.key));
+    for (const t of shown) {
+      const on = V.hl === t.key;
+      legend.appendChild(el('button', { class: 'nb-leg' + (on ? ' on' : ''), title: homNbLab(t) + (t.desc ? ' — ' + t.desc : ''), 'aria-pressed': on ? 'true' : 'false', onclick: () => { V.hl = on ? null : t.key; draw(); drawTable(); drawLegend(); } },
+        el('span', { class: 'swatch', style: { background: M.C.col.get(t.key) } }), el('span', { class: 'nb-leg-l' }, homNbLab(t, 50)), el('span', { class: 'nb-leg-s' }, Math.round(t.score * 100) + '%')));
+    }
+    const extra = [];
+    if (M.C.over) extra.push(plural(M.C.over, 'more term') + ' above the threshold have no colour of their own (raise the threshold to see them)');
+    if (M.T.filled) extra.push(plural(M.T.filled, 'gene') + ' without ' + (M.T.by === 'og' ? 'an eggNOG group' : 'a protein family') + ' of their own take the most common one of their family');
+    extra.push(M.needAnn ? 'grey = below the threshold, pale = no annotation found' : 'grey = below the threshold or found next to one homologue only');
+    legend.appendChild(el('span', { class: 'muted small nb-leg-note' }, extra.join('; ') + '. Percent = share of the homologues with the term nearby; click one to highlight it.'));
+  }
+  function draw() {
+    const svg = homNbSVG(app, a, items, M, order(), { mode, view: V, interactive: true, width: figBox.clientWidth - 14 });
+    figBox.innerHTML = ''; figBox.appendChild(svg);
+    const geneOf = e => { const g = e.target.closest && e.target.closest('.nb-g'); return g ? { k: +g.dataset.k, j: +g.dataset.j } : null; };
+    svg.addEventListener('pointermove', e => {
+      const p = geneOf(e);
+      if (!p) { Tooltip.hide(); return; }
+      const c = a.ctx[items[p.k].id], g = c.genes[p.j], F = M.sum.byF.get(a.nbFam.per[p.k][p.j]), t = M.T.terms.get(M.T.per[p.k].get(p.j));
+      const ann = g.ann ? [g.ann.og && g.ann.og.length ? 'eggNOG ' + g.ann.og.join(', ') : '', g.ann.pf && g.ann.pf.length ? 'Pfam ' + g.ann.pf.map(x => x[0]).join(', ') : '', g.ann.fm || ''].filter(Boolean).join('<br>') : '';
+      Tooltip.show('<b>' + esc(g.n || g.l || g.t) + '</b>' + (g.self ? ' (the homologue)' : '') + '<br>' + esc(g.p || '') + (g.aa ? '<br>' + g.aa.length + ' aa' : '') +
+        (F ? '<br>Family ' + F.no + ': near ' + F.n + ' of ' + N + ' homologues' : g.aa ? '' : '<br>(no protein)') + (ann ? '<br>' + esc(ann).replace(/&lt;br&gt;/g, '<br>') : '') +
+        (t && M.T.by !== 'fam' ? '<br>Colour: ' + esc(homNbLab(t, 50)) + ' (' + Math.round(t.score * 100) + '%)' + (M.T.inf[p.k].has(p.j) ? ', taken from its family' : '') : '') + '<br>' + esc((c.nuc || '') + ':' + g.s + '..' + g.e + (g.str < 0 ? ' (−)' : ' (+)')), e.clientX, e.clientY);
+    });
+    svg.addEventListener('pointerleave', () => Tooltip.hide());
+    svg.addEventListener('click', e => {
+      const p = geneOf(e);
+      if (!p) return;
+      const t = M.T.per[p.k].get(p.j);
+      V.hl = t != null && V.hl !== t ? t : null;
+      draw(); drawTable(); drawLegend();
+      homNbGeneDetail(app, a, items, p.k, p.j, M, detail);
+    });
+  }
+  // families table
+  const tblBox = el('div', { class: 'table-scroll tall' });
+  function drawTable() {
+    const showAnn = M.sum.list.some(F => F.og.length || F.pf.length);
+    const famCol = homNbColours(M.T.by === 'fam' ? M.T : homNbTerms(a, items, M.vis, 'fam', M.sum), V.thr, mode).col;
+    const t = el('table', { class: 'simple-table hom-famtable' }, el('tr', {}, el('th', {}, ''), el('th', { class: 'num' }, 'Family'), el('th', {}, 'Gene'), el('th', {}, 'Protein'),
+      showAnn ? el('th', {}, 'Pfam') : '', showAnn ? el('th', {}, 'eggNOG') : '', el('th', { class: 'num' }, 'Near'), el('th', { class: 'num' }, 'Usual place'), el('th', { class: 'num' }, 'Same direction'), el('th', {}, 'Phyla'), el('th', {}, '')));
+    for (const F of M.sum.list.filter(F => F.isSelf || F.n >= 2).slice(0, 60)) {
+      const fk = 'F' + F.f, on = M.T.by === 'fam' && V.hl === fk;
+      const tr = el('tr', { class: on ? 'hom-hl' : '', onclick: () => { if (V.by !== 'fam') { V.by = 'fam'; bySel.value = 'fam'; } V.hl = on ? null : fk; redraw(); } },
+        el('td', {}, el('span', { class: 'swatch', style: { background: famCol.get(fk) || 'transparent', border: famCol.get(fk) ? '' : '1px solid #bbb' } })),
+        el('td', { class: 'num' }, String(F.no)), el('td', {}, F.isSelf ? el('b', {}, homQueryName(a) + ' (the homologues)') : F.name || '—'), el('td', { class: 'small' }, truncate(F.product, 60)),
+        showAnn ? el('td', { class: 'small', title: F.pf.map(p => p[0]).join(', ') }, F.pf.map(p => p[1] || p[0]).join('; ') || '—') : '', showAnn ? el('td', { class: 'small' }, F.og.join(', ') || '—') : '',
+        el('td', { class: 'num' }, F.n + ' of ' + N + ' (' + Math.round(F.n / N * 100) + '%)'), el('td', { class: 'num' }, F.isSelf ? '0' : (F.relMed > 0 ? '+' : '') + F.relMed),
+        el('td', { class: 'num' }, Math.round(F.sameShare * 100) + '%'), el('td', { class: 'small' }, truncate([...F.phyla.entries()].sort((x, y) => y[1] - x[1]).map(([p, n]) => p + ' ' + n).join(', '), 70)),
+        el('td', {}, el('button', { class: 'link-btn', onclick: e => { e.stopPropagation(); homNbFamilyFasta(a, items, F); } }, 'FASTA')));
+      t.appendChild(tr);
+    }
+    tblBox.innerHTML = ''; tblBox.appendChild(t);
+  }
+  // presence across phyla
+  const matBox = el('div', { class: 'hom-conschart' });
+  const drawMatrix = () => { matBox.innerHTML = ''; matBox.appendChild(homNbMatrixSVG(a, items, M, { mode })); };
+  blk.append(el('h4', { class: 'sub-h' }, 'Families of neighbouring genes'),
+    el('p', { class: 'muted small' }, '“Usual place”: the middle position relative to the homologue (+1 = the next gene after it, −1 = the gene before it). Click a family (or a gene in the picture) to highlight it. Families found next to only one homologue are not listed. Pfam and eggNOG appear once annotations have been looked up.'), tblBox,
+    el('div', { class: 'chart-head' }, el('h4', { class: 'sub-h' }, 'Which neighbours, in which phyla'),
+      figureLinks(fmt => downloadChartSVG(o => homNbMatrixSVG(a, items, homNbModel(a, items, V, 'light'), o), safeFileName(homQueryName(a) + '_neighbours_by_phylum'), 'Neighbouring genes of ' + homQueryName(a) + ' by phylum', fmt), 'the chart')), matBox);
+  /** Recompute after a change of colouring, window or threshold (light = the threshold only). */
+  function redraw(light) {
+    M = homNbModel(a, items, V, mode);
+    drawIntro(); drawLegend(); draw();
+    if (!light) { drawTable(); drawMatrix(); } else drawMatrix();
+  }
+  drawIntro(); drawLegend(); draw(); drawTable(); drawMatrix();
+}
+function homNbOrder(a, items, V) {
+  const idx = items.map((it, k) => k);
+  if (V.order === 'tree') { const t = homTreeOrder(a); if (t) { const pos = new Map(t.map((r, i) => [r, i])); return idx.sort((x, y) => (pos.get(items[x].row) ?? 1e9) - (pos.get(items[y].row) ?? 1e9)); } }
+  if (V.order === 'taxonomy') { const key = k => { const it = items[k]; const L = it.id === 'query' ? (a.query.lineage || {}) : ((it.h && it.h.lineage) || {}); return (it.id === 'query' ? '0' : '1') + [L.phylum, L.class, L.order, L.family, L.genus].map(x => x || '~').join('|'); }; return idx.sort((x, y) => key(x).localeCompare(key(y))); }
+  return idx;
+}
+
+/* ---------------- the picture ---------------- */
+/** Rows of gene arrows (SVG), to scale or as a schematic; with opt.legend the colour key is drawn underneath (for files). */
+function homNbSVG(app, a, items, M, order, opt = {}) {
+  const { ink, ink3, line } = chartInk(opt);
+  const V = opt.view || {};
+  const W = Math.round(clamp(opt.width || 1120, 620, 1600)), NW = Math.round(clamp(W * 0.25, 170, 250)), Mg = { t: 10, r: 12 };
+  const PW = W - NW - Mg.r, rowH = V.labels !== false ? 34 : 24;
+  // where each shown gene goes, relative to the centre of the homologue, turned so the homologue points right
+  const rows = order.map(k => {
+    const c = a.ctx[items[k].id], G = c.genes;
+    const si = Math.max(0, G.findIndex(g => g.self)), self = G[si] || { s: c.start, e: c.end, str: c.strand };
+    const dir = self.str || 1, centre = (self.s + self.e) / 2;
+    return { k, genes: M.vis[k].map(j => { const g = G[j]; return { j, g, x1: dir > 0 ? g.s - centre : centre - g.e, x2: dir > 0 ? g.e - centre : centre - g.s, right: g.str * dir > 0, rel: (j - si) * (dir > 0 ? 1 : -1) }; }) };
+  });
+  let place;
+  if (V.schematic) {
+    let lo = 0, hi = 0;
+    for (const r of rows) for (const x of r.genes) { lo = Math.min(lo, x.rel); hi = Math.max(hi, x.rel); }
+    const slot = PW / (hi - lo + 1), gap = Math.min(8, slot * 0.18);
+    place = x => ({ px1: NW + (x.rel - lo) * slot + gap / 2, px2: NW + (x.rel - lo + 1) * slot - gap / 2, cut1: false, cut2: false });
+  } else {
+    let span = (V.kb || 10) * 1000;
+    if (V.win === 'genes') { span = 1000; for (const r of rows) for (const x of r.genes) span = Math.max(span, Math.abs(x.x1), Math.abs(x.x2)); }
+    span += 300;
+    const sx = PW / (2 * span), X0 = NW + PW / 2;
+    place = x => ({ px1: X0 + Math.max(-span, x.x1) * sx, px2: X0 + Math.min(span, x.x2) * sx, cut1: x.x1 < -span, cut2: x.x2 > span, sx });
+    place.sx = sx;
+  }
+  // colour key (for files)
+  const keyTerms = opt.legend ? M.T.list.filter(t => M.C.col.has(t.key)) : [];
+  const keyW = keyTerms.map(t => 26 + homNbLab(t, 46).length * 6.1 + 34);
+  let kx = 0, keyRows = keyTerms.length ? 1 : 0;
+  for (const w of keyW) { if (kx + w > W - 16 && kx > 0) { keyRows++; kx = 0; } kx += w; }
+  const yb = Mg.t + rows.length * rowH + 16;
+  const H = yb + 22 + keyRows * 17 + 6;
+  const svg = svgNode('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg nb-svg', role: 'img', 'aria-label': 'Genes around each homologue', width: W, height: H });
+  const lab = homRowLabels(app, a, items.map(it => it.id), 'phylum', opt.theme === 'light' ? 'light' : null);
+  const accent = opt.theme === 'light' ? '#5A3DB8' : cssVar('--violet', '#5A3DB8');
+  const hl = V.hl;
+  const M2 = opt.theme === 'light' ? Object.assign({}, M, { mode: 'light' }) : M;
+  rows.forEach((r, ri) => {
+    const k = r.k, it = items[k];
+    const y = Mg.t + ri * rowH + (V.labels !== false ? 20 : 12);
+    const L = lab[k];
+    if (L.color) svgNode('rect', { x: 4, y: y - 5, width: 8, height: 10, rx: 1.5, fill: L.color }, svg);
+    svgNode('text', { x: 16, y: y + 4, 'font-size': 11, fill: it.id === 'query' ? accent : ink, 'font-weight': it.id === 'query' ? 700 : 400 }, svg, truncate(L.short, Math.floor((NW - 22) / 6.2)));
+    if (!V.schematic) svgNode('line', { x1: NW, x2: NW + PW, y1: y, y2: y, stroke: line, 'stroke-width': 1 }, svg);
+    for (const x of r.genes) {
+      const g = x.g, { px1, px2, cut1, cut2 } = place(x);
+      if (px2 - px1 < 0.5) continue;
+      const t = M.T.per[k].get(x.j);
+      const { fill, nodata } = homNbGeneFill(M2, k, x.j, g);
+      const hb = 6, head = Math.min(8, (px2 - px1) * 0.5), right = x.right;
+      let pts = right ? [[px1, y - hb], [px2 - head, y - hb], [px2, y], [px2 - head, y + hb], [px1, y + hb]] : [[px2, y - hb], [px1 + head, y - hb], [px1, y], [px1 + head, y + hb], [px2, y + hb]];
+      if ((right && cut2) || (!right && cut1)) pts = [[px1, y - hb], [px2, y - hb], [px2, y + hb], [px1, y + hb]];
+      const on = hl != null && t === hl, dim = hl != null && !on;
+      const gEl = svgNode('g', { class: opt.interactive ? 'nb-g' : '', 'data-k': k, 'data-j': x.j, opacity: dim ? 0.3 : 1 }, svg);
+      svgNode('polygon', { points: pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '), fill, stroke: g.self || on ? ink : rgba('#1E1B2E', 0.35), 'stroke-width': g.self || on ? 1.6 : 0.7, 'stroke-dasharray': nodata && !g.self ? '2 2' : null }, gEl);
+      if (V.labels !== false) {
+        const nm = g.self ? (g.n || (it.id === 'query' ? homQueryName(a) : '')) : g.n;
+        if (nm && (px2 - px1) > nm.length * 5.6 + 2) svgNode('text', { x: (px1 + px2) / 2, y: y - 9, 'text-anchor': 'middle', 'font-size': 9.5, 'font-style': 'italic', fill: ink3 }, gEl, nm);
+      }
+    }
+  });
+  if (!V.schematic) {
+    const sx = place.sx, len = sx * 1000 > 40 ? 1000 : 5000;
+    svgNode('path', { d: `M${NW} ${yb}H${NW + len * sx}M${NW} ${yb - 4}V${yb + 4}M${NW + len * sx} ${yb - 4}V${yb + 4}`, stroke: ink, 'stroke-width': 1.2, fill: 'none' }, svg);
+    svgNode('text', { x: NW + len * sx + 6, y: yb + 4, 'font-size': 10.5, fill: ink3 }, svg, (len / 1000) + ' kb');
+  } else svgNode('text', { x: NW, y: yb + 4, 'font-size': 10.5, fill: ink3 }, svg, 'Schematic: genes in their order, not to scale');
+  svgNode('text', { x: NW + PW, y: yb + 4, 'text-anchor': 'end', 'font-size': 10.5, fill: ink3 }, svg, 'Colour: ' + HOM_NB_BY.find(b => b[0] === M.T.by)[1].toLowerCase() + '; outlined = the homologue');
+  // the colour key
+  kx = 0; let ky = yb + 24;
+  keyTerms.forEach((t, i) => {
+    if (kx + keyW[i] > W - 16 && kx > 0) { kx = 0; ky += 17; }
+    svgNode('rect', { x: 8 + kx, y: ky - 9, width: 12, height: 10, rx: 2, fill: M2.C.col.get(t.key) || M.C.col.get(t.key) }, svg);
+    svgNode('text', { x: 8 + kx + 16, y: ky, 'font-size': 10.5, fill: ink }, svg, homNbLab(t, 46) + '  ' + Math.round(t.score * 100) + '%');
+    kx += keyW[i];
+  });
+  return svg;
+}
+function homNbGeneDetail(app, a, items, k, j, M, box) {
+  const it = items[k], c = a.ctx[it.id], g = c.genes[j], F = M.sum.byF.get(a.nbFam.per[k][j]), N = items.length;
+  box.innerHTML = '';
+  const ann = g.ann;
+  box.append(el('h4', { class: 'sub-h' }, (g.n || g.l || g.t) + (g.self ? ' — the homologue' : '')),
+    el('p', {}, el('i', {}, c.org || (it.h && it.h.org) || a.query.org), ' · ' + (g.p || 'no product name') + (g.l ? ' · ' + g.l : '') + (g.aa ? ' · ' + g.aa.length + ' aa' : '')),
+    el('p', { class: 'small' }, (c.nuc || '') + ': ' + fmtInt(g.s) + '–' + fmtInt(g.e) + (g.str < 0 ? ' (minus strand)' : ' (plus strand)') + (g.pid ? ' · protein ' + g.pid : '') + (F ? '. Family ' + F.no + (F.name ? ' (' + F.name + ')' : '') + ': next to ' + F.n + ' of the ' + N + ' homologues.' : '.')));
+  if (ann) box.appendChild(el('p', { class: 'small' },
+    ann.a ? el('span', {}, 'UniProt ', ext(LINKS.uniprot(ann.a), ann.a), ann.pn ? ' (' + ann.pn + ')' : '', ' · ') : el('span', {}, 'UniParc ' + ann.u + ' · '),
+    ann.og && ann.og.length ? el('span', {}, 'eggNOG ', ...ann.og.map((o, i) => [i ? ', ' : '', /^COG\d{4}$/.test(o) ? ext(LINKS.cog(o), o) : o]).flat(), ' · ') : '',
+    ann.pf && ann.pf.length ? el('span', {}, 'Pfam ', ...ann.pf.map(([id, nm], i) => [i ? ', ' : '', ext(LINKS.pfam(id), id), nm ? ' ' + nm : '']).flat()) : 'no Pfam domain',
+    ann.fm ? ' · ' + ann.fm : '', ann.kw && ann.kw.length ? ' · ' + ann.kw.join(', ') : ''));
+  else if (ann === 0) box.appendChild(el('p', { class: 'small muted' }, 'This protein was not found in UniParc.'));
+  box.appendChild(el('div', { class: 'actions' }, c.nuc && c.src !== 'local' ? ext(LINKS.ncbiRegion(c.nuc, g.s, g.e), 'Open at NCBI') : '',
+    g.pid ? ext(LINKS.ncbiProtein(g.pid), 'Protein at NCBI') : '',
+    g.aa ? el('button', { class: 'btn small', onclick: () => copyText('>' + (g.l || g.n || 'gene') + ' ' + (g.p || '') + ' [' + (c.org || '') + ']\n' + wrapFasta(g.aa), 'Protein') }, 'Copy protein') : '',
+    g.aa ? el('button', { class: 'btn small', onclick: () => window.open(LINKS.blastp(g.aa), '_blank', 'noopener') }, 'BLAST at NCBI') : ''));
+}
+
+/* ---------------- annotations: UniParc (by checksum) and UniProtKB ---------------- */
+async function homPool(list, size, fn) {
+  let i = 0;
+  const run = async () => { while (i < list.length) { const x = list[i++]; await fn(x); } };
+  await Promise.all(Array.from({ length: Math.min(size, list.length) }, run));
+}
+function homChunks(list, n) { const out = []; for (let i = 0; i < list.length; i += n) out.push(list.slice(i, i + n)); return out; }
+/**
+ * The current UniProtKB entries of a sequence to ask for (at most 10). Accessions in the older style
+ * (O…, P…, Q… with 6 characters) come first, as reviewed (Swiss-Prot) entries are among them.
+ */
+function homPickAccessions(accs) {
+  const sp = accs.filter(x => /^[OPQ][0-9][A-Z0-9]{3}[0-9]$/.test(x));
+  return sp.concat(accs.filter(x => !sp.includes(x))).slice(0, 10);
+}
+/** One annotation from all UniProtKB entries of a sequence: the reviewed entry first, gaps filled from the others. */
+function homMergeEntries(es) {
+  if (!es.length) return null;
+  const main = es.find(e => e.rev) || es.find(e => e.og.length && e.fm) || es.find(e => e.og.length) || es[0];
+  const first = f => { const e = [main].concat(es).find(x => x[f] && x[f].length); return e ? e[f] : (f === 'og' || f === 'kw' ? [] : ''); };
+  let og = main.og;
+  if (!og.length) {                                         // groups given by the other entries, most frequent first
+    const n = new Map();
+    for (const e of es) for (const o of e.og) n.set(o, (n.get(o) || 0) + 1);
+    og = [...n.entries()].sort((x, y) => y[1] - x[1]).map(x => x[0]);
+  }
+  return { acc: main.acc, rev: main.rev, og, fm: first('fm'), kw: first('kw'), pn: main.pn || first('pn') };
+}
+/** Look up eggNOG, Pfam, protein family and keywords for every neighbouring protein that has not been looked up yet. */
+async function homNbAnnotate(app, a) {
+  const items = homNbItems(a);
+  await homTask(app, a, 'Annotations', async task => {
+    const bySum = new Map();
+    for (const it of items) for (const g of a.ctx[it.id].genes) {
+      if (!g.aa || g.aa.length < 10 || g.ann !== undefined) continue;
+      const k = crc64(g.aa);
+      if (!bySum.has(k)) bySum.set(k, []);
+      bySum.get(k).push(g);
+    }
+    const sums = [...bySum.keys()];
+    if (!sums.length) { toast('Every neighbouring protein has been looked up already.'); return; }
+    // 1. UniParc: the archive of every protein sequence, found by checksum (Pfam domains, UniProtKB entries)
+    const upi = new Map();
+    let done = 0;
+    await homPool(homChunks(sums, 25), 3, async part => {
+      task.check();
+      const res = await homRetry(() => HOMNET.uniparcByChecksum(part), task).catch(e => { console.warn(e); return null; });
+      // keep the entry with exactly this sequence (two different proteins can, rarely, share a checksum)
+      if (res) for (const r of res) { const gs = bySum.get(r.crc); if (gs && (!r.seq || r.seq === gs[0].aa)) upi.set(r.crc, r); }
+      else for (const s of part) upi.set(s, null);           // could not be asked: try again later
+      done += part.length;
+      task.set('finding ' + fmtInt(sums.length) + ' neighbouring proteins in UniParc (' + fmtInt(done) + ')', done / sums.length * 0.7);
+    });
+    // 2. UniProtKB: eggNOG group, protein family, keywords, name (for sequences that have a current entry)
+    const want = new Map();
+    for (const [k, r] of upi) if (r && r.accs.length) want.set(k, homPickAccessions(r.accs));
+    const accs = [...new Set([...want.values()].flat())];
+    const ent = new Map();
+    let done2 = 0;
+    await homPool(homChunks(accs, 100), 2, async part => {
+      task.check();
+      const m = await homRetry(() => HOMNET.uniprotAnnotations(part), task).catch(e => { console.warn(e); return new Map(); });
+      for (const [k, v] of m) ent.set(k, v);
+      done2 += part.length;
+      task.set('reading eggNOG groups, families and keywords from UniProt (' + fmtInt(done2) + ' of ' + fmtInt(accs.length) + ')', 0.7 + done2 / Math.max(1, accs.length) * 0.3);
+    });
+    // 3. onto the genes (0 = looked up, not found; undefined = still to do)
+    let found = 0, missing = 0;
+    for (const [k, gs] of bySum) {
+      if (!upi.has(k)) { for (const g of gs) g.ann = 0; missing += gs.length; continue; }
+      const r = upi.get(k);
+      if (r === null) continue;
+      const e = homMergeEntries((want.get(k) || []).map(x => ent.get(x)).filter(Boolean));
+      const ann = { u: r.upi, a: e ? e.acc : '', pf: r.pf, og: e ? e.og : [], fm: e ? e.fm : '', kw: e ? e.kw : [], pn: e ? e.pn : '' };
+      for (const g of gs) g.ann = ann;
+      found += gs.length;
+    }
+    // 4. names of Pfam families that InterPro has not taken in (UniParc gives none for them)
+    const noName = new Set();
+    for (const it of items) for (const g of a.ctx[it.id].genes) if (g.ann) for (const p of g.ann.pf || []) if (!p[1]) noName.add(p[0]);
+    if (noName.size) {
+      task.set('names of ' + plural(noName.size, 'Pfam family', 'Pfam families') + ' from InterPro', 0.98);
+      const names = new Map();
+      await homPool([...noName].slice(0, 60), 4, async id => {
+        task.check();
+        const d = await httpGet('https://www.ebi.ac.uk/interpro/api/entry/pfam/' + encodeURIComponent(id), { type: 'json', timeout: 30000 }).catch(() => null);
+        const nm = d && d.metadata && d.metadata.name;
+        if (nm) names.set(id, (typeof nm === 'string' ? nm : nm.name || nm.short || '').replace(/^./, c => c.toUpperCase()));
+      });
+      const seen = new Set();
+      for (const it of items) for (const g of a.ctx[it.id].genes) if (g.ann && !seen.has(g.ann)) { seen.add(g.ann); for (const p of g.ann.pf || []) if (!p[1] && names.get(p[0])) p[1] = names.get(p[0]); }
+    }
+    toast('Annotations: ' + fmtInt(found) + ' neighbouring proteins found' + (missing ? ', ' + fmtInt(missing) + ' not in UniParc' : '') + '.');
+  });
+}
+
+/* ---------------- files ---------------- */
+function homNbFigure(app, a, items, fmt) {
+  const V = Object.assign({}, a.nbView || {}, { hl: null });
+  const M = homNbModel(a, items, V, 'light');
+  downloadChartSVG(o => homNbSVG(app, a, items, M, homNbOrder(a, items, V), Object.assign({}, o, { view: V, legend: true, width: 1120 })), safeFileName(homQueryName(a) + '_neighbourhoods'), 'Genes around ' + homQueryName(a) + ' and ' + plural(items.length - 1, 'homologue'), fmt);
+}
+function homNbFamilyFasta(a, items, F) {
+  const recs = F.genes.filter(x => x.g.aa).map(x => { const it = items[x.k], c = a.ctx[it.id]; return { name: alnSafeName((x.g.l || x.g.n || 'gene') + '_' + ((c.org || (it.h && it.h.org) || '').split(' ').slice(0, 2).join('_')), 60), desc: (x.g.p || '') + ' [' + (c.org || '') + '] ' + (c.nuc || '') + ':' + x.g.s + '-' + x.g.e, seq: x.g.aa }; });
+  download(safeFileName(homQueryName(a) + '_family_' + F.no + (F.name ? '_' + F.name : '')) + '.faa', fastaText(recs), 'text/plain');
+}
+/** One row per shown gene: where it is, what it is, its family and its annotations (like GeCoViz's context table). */
+function homNbGeneRows(a, items, M) {
+  const head = ['homologue', 'organism', 'phylum', 'sequence', 'start', 'end', 'strand', 'place', 'type', 'gene', 'locus tag', 'protein ID', 'product', 'length aa', 'family', 'eggNOG', 'Pfam', 'Pfam names', 'protein family', 'biological process', 'UniProt', 'UniParc', 'colour term', 'is the homologue'];
+  const rows = [head];
+  items.forEach((it, k) => {
+    const c = a.ctx[it.id], G = c.genes, si = Math.max(0, G.findIndex(g => g.self)), dir = (G[si] || {}).str || 1;
+    for (const j of M.vis[k]) {
+      const g = G[j], F = M.sum.byF.get(a.nbFam.per[k][j]), n = g.ann || null, t = M.T.terms.get(M.T.per[k].get(j));
+      rows.push([it.id === 'query' ? homQueryName(a) : (it.h && it.h.acc) || it.id, c.org || (it.h && it.h.org) || '', homNbPhylum(a, it), c.nuc || '', g.s, g.e, g.str < 0 ? '-' : '+', (j - si) * (dir > 0 ? 1 : -1), g.t, g.n, g.l, g.pid || '', g.p, g.aa ? g.aa.length : '',
+        F ? F.no : '', n ? (n.og || []).join(';') : '', n ? (n.pf || []).map(p => p[0]).join(';') : '', n ? (n.pf || []).map(p => p[1]).join(';') : '', n ? n.fm : '', n ? (n.kw || []).join(';') : '', n ? n.a : '', n ? n.u : '', t ? homNbLab(t) + (M.T.inf[k].has(j) ? ' (from its family)' : '') : '', g.self ? 'yes' : '']);
+    }
+  });
+  return rows;
+}
+function homNbTsv(app, a, items) {
+  const M = homNbModel(a, items, a.nbView, 'light');
+  download(safeFileName(homQueryName(a) + '_neighbourhoods') + '.tsv', homNbGeneRows(a, items, M).map(r => r.map(v => String(v == null ? '' : v).replace(/[\t\r\n]+/g, ' ')).join('\t')).join('\n') + '\n', 'text/tab-separated-values');
+}
+function homNbExcel(app, a, items) {
+  const V = a.nbView, M = homNbModel(a, items, V, 'light'), N = items.length;
+  const t1 = [['family', 'gene name', 'protein', 'Pfam', 'eggNOG', 'next to homologues', 'share %', 'usual place', 'same direction %', 'phyla']].concat(M.sum.list.map(F => [F.no, F.isSelf ? homQueryName(a) + ' (the homologues)' : F.name, F.product, F.pf.map(p => p[0] + (p[1] ? ' ' + p[1] : '')).join('; '), F.og.join('; '), F.n, +(F.n / N * 100).toFixed(1), F.isSelf ? 0 : F.relMed, +(F.sameShare * 100).toFixed(1), [...F.phyla.entries()].map(([p, n]) => p + ' ' + n).join('; ')]));
+  const t3 = [['colour term (' + HOM_NB_BY.find(b => b[0] === M.T.by)[1] + ')', 'description', 'next to homologues', 'vertical conservation %', 'genes']].concat(M.T.list.map(t => [homNbLab(t), t.desc, t.n, +(t.score * 100).toFixed(1), t.genes.length]));
+  downloadXlsx(safeFileName(homQueryName(a) + '_neighbourhoods') + '.xlsx', [{ name: 'Families', rows: t1, widths: [8, 14, 40, 40, 16, 10, 9, 10, 12, 50], filter: true },
+    { name: 'Genes', rows: homNbGeneRows(a, items, M), widths: [16, 30, 16, 14, 10, 10, 6, 6, 8, 10, 14, 16, 40, 9, 8, 14, 16, 30, 26, 30, 12, 15, 30, 10], filter: true },
+    { name: 'Colour terms', rows: t3, widths: [40, 40, 10, 12, 8], filter: true },
+    xlsxInfoSheet(app, [['Families', 'proteins similar at E ≤ 1e-5 (GenOrbit’s Smith-Waterman search) with the shorter at least half as long as the longer, joined into groups'],
+      ['Window', V.win === 'genes' ? V.n + ' genes on each side of each homologue' : '± ' + V.kb + ' kb around each homologue'],
+      ['Annotations', 'UniParc (found by the sequence’s CRC64 checksum): Pfam domains; UniProtKB: eggNOG groups, “belongs to the … family”, biological-process keywords'],
+      ['Vertical conservation', 'share of the homologues with the term among their shown neighbours (as in GeCoViz)']])]);
+}
+/** Share of the neighbourhoods of each phylum that contain each term (top terms × phyla). */
+function homNbMatrixSVG(a, items, M, opt = {}) {
+  const { ink, ink3, line } = chartInk(opt);
+  let T = M.T;
+  if (T.by === 'dir') T = homNbTerms(a, items, M.vis, 'fam', M.sum);
+  const phy = new Map();
+  items.forEach((it, k) => { const p = homNbPhylum(a, it); phy.set(p, (phy.get(p) || []).concat(k)); });
+  const cols = [...phy.entries()].sort((x, y) => y[1].length - x[1].length).slice(0, 12);
+  const terms = T.list.filter(t => t.key !== T.selfKey && t.n >= 2).slice(0, 18);
+  const CW = 74, RH = 20, LW = 260, TH = 64;
+  const W = Math.max(560, LW + (cols.length + 1) * CW + 10), H = TH + Math.max(1, terms.length) * RH + 30;
+  const svg = svgNode('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart-svg', role: 'img', 'aria-label': 'Neighbouring genes by phylum', style: 'max-width:' + W + 'px' });
+  const heads = [['All', items.map((x, k) => k)]].concat(cols);
+  heads.forEach(([p, ks], i) => {
+    const x = LW + i * CW + CW / 2;
+    svgNode('text', { x, y: TH - 22, 'text-anchor': 'middle', 'font-size': 10.5, 'font-weight': i === 0 ? 700 : 400, fill: ink }, svg, truncate(p, 13));
+    svgNode('text', { x, y: TH - 8, 'text-anchor': 'middle', 'font-size': 9.5, fill: ink3 }, svg, 'n = ' + ks.length);
+  });
+  if (!terms.length) svgNode('text', { x: LW, y: TH + 14, 'font-size': 11, fill: ink3 }, svg, 'Nothing is shared by two or more neighbourhoods.');
+  const dark = opt.theme !== 'light' && opt.mode === 'dark';
+  const ramp = v => rampColor([[0, dark ? '#2A2738' : '#F4F2FA'], [1, '#5A3DB8']], v);
+  terms.forEach((t, r) => {
+    const y = TH + r * RH;
+    svgNode('text', { x: LW - 8, y: y + RH / 2 + 4, 'text-anchor': 'end', 'font-size': 10.5, fill: ink }, svg, truncate(t.label + (T.by !== 'fam' && t.desc ? ' · ' + t.desc : ''), 42));
+    heads.forEach(([p, ks], i) => {
+      const n = ks.filter(k => t.rows.has(k)).length, v = ks.length ? n / ks.length : 0;
+      const x = LW + i * CW;
+      svgNode('rect', { x: x + 2, y: y + 1, width: CW - 4, height: RH - 2, rx: 2, fill: ramp(v) }, svg);
+      svgNode('text', { x: x + CW / 2, y: y + RH / 2 + 4, 'text-anchor': 'middle', 'font-size': 10, fill: v > 0.55 ? '#FFFFFF' : ink }, svg, n ? Math.round(v * 100) + '%' : '·');
+    });
+  });
+  svgNode('text', { x: 8, y: H - 10, 'font-size': 10, fill: ink3 }, svg, 'Share of the homologues of each phylum with the ' + (T.by === 'fam' ? 'family' : 'term') + ' among their shown neighbours.');
+  return svg;
 }
 
 /* ===== 16_controls.js ===== */
@@ -17149,14 +17725,14 @@ function helpHTML() {
 </ul>
 <h3>Homologues: other bacteria, conserved residues, trees</h3>
 <ol>
-<li>Open the <b>Homologues</b> tab and pick a gene (or use a gene's <b>BLAST / similar</b> → <b>Homologues, alignment and tree</b>). Each gene gets its own analysis; they are saved with the session.</li>
+<li>Open the <b>Homologues</b> tab and pick a gene (or use a gene's <b>BLAST / similar</b> → <b>Homologues, alignment and tree</b>). Each gene gets its own analysis; they are saved with the session. <b>Save analyses…</b> (top right of the tab) also saves one analysis, or all of them, as a file of their own (.genorbit-hom.json.gz) to keep or send to a colleague; <b>Open…</b> adds the analyses of such a file (or of a session file) to the open ones. Dropping a homologue file on the window works too.</li>
 <li><b>Search</b> collects homologues from one or more sources: <b>BLAST at EMBL-EBI</b> against UniProt (only some groups, e.g. one phylum, or leaving some out; EBI asks for your e-mail address, which stays on this computer), <b>UniRef clusters</b> (instant, close relatives), <b>OMA orthologues</b>, <b>Foldseek</b> (the 3D shape of the AlphaFold model, for distant homologues), <b>your genomes</b> (this genome and the Compare genomes, offline), and <b>files</b> (NCBI BLAST results as XML, JSON or CSV, or FASTA). NCBI does not let web pages run BLAST, so the button opens NCBI BLAST and you bring the downloaded result back.</li>
 <li><b>Hits</b>: GenOrbit aligns every hit with your protein for identity and coverage. Filters choose which go into the alignment: E-value, identity range, coverage, one per species / genus / family, near-identical ones removed, and the number of sequences; when there are more hits than that, the best of every phylum is taken first (or choose the best scores only). The bar chart shows the phyla (click one to leave it out). <b>Check orthologue or paralogue</b> searches each hit back against your genome: if its best match is your protein, it is a reciprocal best hit (likely orthologue).</li>
 <li><b>Alignment</b>: in your browser (quick, good for related proteins), or MAFFT / Clustal Omega at EBI (better for distant ones), or load an alignment made elsewhere. Colour by residue type, by agreement or by sameness with your protein; jump to a residue; mark a motif; download FASTA, Clustal, Stockholm or PHYLIP, a figure of any stretch, and a sequence logo.</li>
 <li><b>Conservation</b>: a score for every residue of your protein (Jensen–Shannon divergence, Capra &amp; Singh 2007) and 9 grades (1 = variable … 9 = conserved). The chart shows Pfam domains and the PBP / GT51 motifs; the table lists the most conserved residues; the AlphaFold model is coloured by grade, and the PDB file (score in the B-factor column) or a PyMOL or ChimeraX script colours it in those programs.</li>
 <li><b>Tree</b>: neighbour-joining with bootstrap support, rooted at the midpoint or on any branch you click. Collapse or swap groups, colour by phylum (or class, order …), and download Newick, a figure, or files for iTOL. Trees from IQ-TREE or other programs can be loaded (the names must be those of the downloaded alignment).</li>
 <li><b>DNA &amp; upstream</b>: <b>Get DNA and neighbouring genes</b> finds each gene in its genome (ENA for UniProt entries, NCBI Identical Protein Groups for RefSeq proteins) and reads that stretch from NCBI. The codons are then lined up under the protein alignment: blue = a synonymous change, orange = a different amino acid; dN/dS against your gene shows the strength of selection. The upstream regions are lined up at the start codon, with Shine–Dalgarno-like sequences marked, a motif search and a DNA logo.</li>
-<li><b>Neighbourhood</b>: the genes within ± 5–20 kb of every homologue, turned so the homologue points right. Similar neighbouring proteins form families (same colour); the table says how often each family sits next to the homologue, where (+1 = the next gene) and in which phyla.</li>
+<li><b>Neighbourhood</b>: the genes around every homologue (± 2–20 kb, or 1–10 genes on each side), turned so the homologue points right, drawn to scale or as a schematic (genes in order, all the same width). Similar neighbouring proteins form families; the table says how often each family sits next to the homologue, where (+1 = the next gene) and in which phyla. <b>Look up annotations</b> finds every neighbouring protein in UniParc by its sequence checksum (CRC64) and reads its Pfam domains there, and its eggNOG orthologous group, UniProt protein family and biological-process keywords from UniProtKB. Genes can then be coloured by any of these (or by gene name or direction), as in GeCoViz. A term is coloured when it is near at least the chosen share of the homologues (its “vertical conservation”, 50% at first); the legend gives each share, and clicking a term highlights it. Proteins without a UniProt entry keep their Pfam domains when UniParc has the sequence; pale dashed genes have no annotation. Downloads: the figure (with its key), a TSV with one line per gene (place, family, eggNOG, Pfam, family, keywords), and an Excel file.</li>
 </ol>
 <ul>
 <li><b>Limits</b>: E-values without a source value (marked ~) are estimated for a search of UniProtKB. The in-browser alignment is a progressive alignment (guide tree from shared 3-letter words, ClustalW-style weights, affine gaps). In tests it gave the same residue pairs as the FAMSA program for close relatives and about 86% of them for distant class A PBPs, so use MAFFT at EBI for distant homologues. Neighbour-joining is fast but simple; distances that are too large for the correction are capped and flagged. dN/dS is not reliable when dS is above about 1.5 (marked “saturated”), which is usual between phyla. Gene families use GenOrbit’s own protein search (E ≤ 10⁻⁵, the shorter protein at least half as long as the longer).</li>
@@ -17576,6 +18152,7 @@ class App {
         if (fmt === 'json') {
           this.done();
           if (target !== 'main') continue;
+          if (homIsFile(text)) { homOpenText(this, text, file.name); return null; }   // homologue analyses only: added to the open ones
           const handle = handles && handles[fi] ? await Promise.resolve(handles[fi]).catch(() => null) : null;
           return this.loadSession(text, { name: file.name, handle: handle && handle.kind === 'file' ? handle : null });
         }
@@ -18550,6 +19127,8 @@ const REFERENCES = [
   { group: 'Homologues: DNA and neighbouring genes', use: 'correction of dN and dS for repeated changes at one site; the link is a catalogue record of the chapter', text: 'Jukes TH, Cantor CR (1969). Evolution of protein molecules. In: Munro HN (ed.), Mammalian Protein Metabolism. Academic Press, New York, pp. 21–132.', url: 'https://research.nhm.org/publications/referenceinfo.html?refid=73' },
   { group: 'Homologues: DNA and neighbouring genes', use: 'codon alignment under the protein alignment', text: 'Suyama M, Torrents D, Bork P (2006). PAL2NAL: robust conversion of protein sequence alignments into the corresponding codon alignments. Nucleic Acids Research 34(Web Server issue): W609–W612.', url: 'https://doi.org/10.1093/nar/gkl315' },
   { group: 'Homologues: DNA and neighbouring genes', use: 'the ribosome-binding (Shine–Dalgarno) sequence before the start codon', text: 'Shine J, Dalgarno L (1974). The 3′-terminal sequence of Escherichia coli 16S ribosomal RNA: complementarity to nonsense triplets and ribosome binding sites. PNAS 71(4): 1342–1346.', url: 'https://doi.org/10.1073/pnas.71.4.1342' },
+  { group: 'Homologues: DNA and neighbouring genes', use: 'the Neighbourhood section follows its ideas: colouring genes by eggNOG, Pfam or other terms, and a term’s “vertical conservation” (share of the genomes with it nearby) with a threshold', text: 'Botas J, Rodríguez del Río Á, Giner-Lamia J, Huerta-Cepas J (2022). GeCoViz: genomic context visualisation of prokaryotic genes from a functional and evolutionary perspective. Nucleic Acids Research 50(W1): W352–W357.', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC9252766/' },
+  { group: 'Homologues: DNA and neighbouring genes', use: 'orthologous groups (as given in UniProt) used to colour neighbouring genes', text: 'Hernández-Plaza A, Szklarczyk D, Botas J, et al. (2023). eggNOG 6.0: enabling comparative genomics across 12 535 organisms. Nucleic Acids Research 51(D1): D389–D394.', url: 'https://doi.org/10.1093/nar/gkac1022' },
   { group: 'Data sources', use: 'structure search with the AlphaFold model', text: 'van Kempen M, Kim SS, Tumescheit C, et al. (2024). Fast and accurate protein structure search with Foldseek. Nature Biotechnology 42(2): 243–246.', url: 'https://doi.org/10.1038/s41587-023-01773-0' },
   { group: 'Data sources', use: 'ready-made orthologues', text: 'Altenhoff AM, Warwick Vesztrocy A, Bernard C, et al. (2024). OMA orthology in 2024: improved prokaryote coverage, ancestral and extant GO enrichment, a revamped synteny viewer and more in the OMA Ecosystem. Nucleic Acids Research 52(D1): D513–D521.', url: 'https://doi.org/10.1093/nar/gkad1020' },
   { group: 'Data sources', use: 'ready-made clusters of related proteins (UniRef50, UniRef90)', text: 'Suzek BE, Wang Y, Huang H, et al. (2015). UniRef clusters: a comprehensive and scalable alternative for improving sequence similarity searches. Bioinformatics 31(6): 926–932.', url: 'https://doi.org/10.1093/bioinformatics/btu739' },
@@ -18557,7 +19136,7 @@ const REFERENCES = [
   { group: 'Data sources', use: 'where a RefSeq protein is encoded', text: 'NCBI Identical Protein Groups (IPG).', url: 'https://www.ncbi.nlm.nih.gov/ipg/docs/about/' },
   { group: 'Data sources', use: 'recognition sequences of the restriction enzymes the codon optimizer can avoid', text: 'REBASE, the restriction enzyme database (New England Biolabs).', url: 'http://rebase.neb.com/rebase/rebase.html' },
   { group: 'Data sources', use: 'genome downloads and assembly search', text: 'O’Leary NA, et al. (2024). Exploring and retrieving sequence and metadata for species across the tree of life with NCBI Datasets. Scientific Data.', url: 'https://doi.org/10.1038/s41597-024-03571-y' },
-  { group: 'Data sources', use: 'protein names, function, keywords, GO, cross-references', text: 'The UniProt Consortium (2025). UniProt: the Universal Protein Knowledgebase in 2025. Nucleic Acids Research 53(D1): D609–D617.', url: 'https://academic.oup.com/nar/article/53/D1/D609/7902999' },
+  { group: 'Data sources', use: 'protein names, function, keywords, GO, cross-references; UniParc, which finds neighbouring proteins by their sequence checksum', text: 'The UniProt Consortium (2025). UniProt: the Universal Protein Knowledgebase in 2025. Nucleic Acids Research 53(D1): D609–D617.', url: 'https://academic.oup.com/nar/article/53/D1/D609/7902999' },
   { group: 'Data sources', use: 'Pfam domains and positions', text: 'InterPro: the protein sequence classification resource in 2025 (2025). Nucleic Acids Research.', url: 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11701551/' },
   { group: 'Data sources', use: 'COG categories (COG 2020 release)', text: 'Galperin MY, et al. (2021). COG database update: focus on microbial diversity, model organisms, and widespread pathogens. Nucleic Acids Research 49(D1): D274–D281.', url: 'https://academic.oup.com/nar/article-pdf/49/D1/D274/35364265/gkaa1018.pdf' },
   { group: 'Data sources', use: 'predicted structures', text: 'Varadi M, et al. (2024). AlphaFold Protein Structure Database in 2024: providing structure coverage for over 214 million protein sequences. Nucleic Acids Research 52(D1): D368.', url: 'https://academic.oup.com/nar/article/52/D1/D368/7337620' },
