@@ -1,0 +1,82 @@
+{
+  "name": "GenOrbit – bacterial genome maps",
+  "short_name": "GenOrbit",
+  "description": "Load any bacterial genome from NCBI and explore it on circular and linear maps, with protein functions, the cell wall pathway, homologues, comparisons and exports.",
+  "id": "/genorbit",
+  "start_url": "./GenOrbit.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "genorbit-map.jpg",
+      "sizes": "1280x800",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "The E. coli K-12 genome on circular and linear maps, with the details of mrcA"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "./GenOrbit.html",
+      "accept": {
+        "application/x-genorbit": [
+          ".genorbit"
+        ],
+        "application/x-genorbit-homologues": [
+          ".genorbit-hom"
+        ]
+      }
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "navigate-new"
+  }
+}
